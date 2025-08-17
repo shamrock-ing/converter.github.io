@@ -5,43 +5,138 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Конвертер валют</title>
   <style>
-    /* СТИЛИТЫ КОНТЕЙНЕРА И ФОРМЫ (как у тебя) */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     *, *::before, *::after { box-sizing: border-box; }
-    body { margin:0; padding:40px 20px; background:#f7f9fc; font-family:'Inter',sans-serif; color:#222; min-height:100vh; display:flex; justify-content:center; align-items:center; }
-    .container { background:#fff; padding:30px 40px 40px; border-radius:14px; box-shadow:0 8px 20px rgba(0,0,0,0.1); max-width:400px; width:100%; display:flex; flex-direction:column; align-items:center; }
-    h1 { font-weight:600; font-size:2.2rem; margin-bottom:30px; color:#1a1a1a; user-select:none; }
-    label { align-self:flex-start; margin-bottom:6px; font-weight:600; color:#444; user-select:none; }
-    input, select { width:100%; padding:14px 16px; margin-bottom:18px; border:1.8px solid #cbd5e1; border-radius:10px; font-size:1rem; font-weight:400; color:#1f2937; background:#fefefe; transition:border-color 0.3s ease, box-shadow 0.3s ease; }
-    input::placeholder { color:#94a3b8; }
-    input:focus, select:focus { outline:none; border-color:#3b82f6; box-shadow:0 0 8px #3b82f6aa; background:#fff; }
-    input.error, select.error { border-color:#ef4444; box-shadow:0 0 8px #ef4444aa; background:#ffe6e6; }
-    .error-message { color:#ef4444; font-size:0.85rem; margin-top:-14px; margin-bottom:18px; align-self:flex-start; user-select:none; height:18px; opacity:0; transition:opacity 0.3s ease; }
-    .error-message.visible { opacity:1; }
-    button { width:100%; padding:15px 0; border:none; border-radius:12px; background-color:#3b82f6; color:#fff; font-weight:600; font-size:1.15rem; cursor:pointer; transition:background-color 0.3s ease, transform 0.2s ease; user-select:none; }
-    button:hover { background-color:#2563eb; transform:scale(1.05); }
-    button:active { transform:scale(0.98); }
-    #result { margin-top:25px; font-size:1.4rem; font-weight:600; color:#2563eb; min-height:1.8em; text-align:center; user-select:none; }
-    #history { margin-top:28px; width:100%; }
-    #history h3 { margin-bottom:12px; font-weight:600; font-size:1rem; color:#475569; user-select:none; }
-    #history ul { max-height:130px; overflow-y:auto; padding-left:18px; margin:0; font-size:0.95rem; color:#64748b; }
-    #history li { margin-bottom:7px; cursor:pointer; transition:color 0.2s ease; }
-    #history li:hover { color:#3b82f6; text-decoration:underline; }
-    /* СТАТУСНЫЙ ИНДИКАТОР API */
-    .api-status { display:flex; align-items:center; margin-bottom:18px; }
-    .status-dot { width:12px; height:12px; border-radius:50%; margin-right:8px; background:red; transition:background 0.3s ease; }
-    .status-text { font-weight:600; user-select:none; }
+    body {
+      margin: 0;
+      padding: 40px 20px;
+      background: #f7f9fc;
+      font-family: 'Inter', sans-serif;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: #fff;
+      padding: 30px 40px 40px;
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      font-weight: 600;
+      font-size: 2.2rem;
+      margin-bottom: 30px;
+      color: #1a1a1a;
+      user-select: none;
+    }
+    label {
+      align-self: flex-start;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: #444;
+      user-select: none;
+    }
+    input, select {
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      border: 1.8px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 400;
+      color: #1f2937;
+      background: #fefefe;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    input::placeholder { color: #94a3b8; }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 8px #3b82f6aa;
+      background: #fff;
+    }
+    input.error, select.error {
+      border-color: #ef4444;
+      box-shadow: 0 0 8px #ef4444aa;
+      background: #ffe6e6;
+    }
+    .error-message {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: -14px;
+      margin-bottom: 18px;
+      align-self: flex-start;
+      user-select: none;
+      height: 18px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .error-message.visible { opacity: 1; }
+    button {
+      width: 100%;
+      padding: 15px 0;
+      border: none;
+      border-radius: 12px;
+      background-color: #3b82f6;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.15rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      user-select: none;
+    }
+    button:hover { background-color: #2563eb; transform: scale(1.05); }
+    button:active { transform: scale(0.98); }
+    #result {
+      margin-top: 25px;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #2563eb;
+      min-height: 1.8em;
+      text-align: center;
+      user-select: none;
+    }
+    #history {
+      margin-top: 28px;
+      width: 100%;
+    }
+    #history h3 {
+      margin-bottom: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #475569;
+      user-select: none;
+    }
+    #history ul {
+      max-height: 130px;
+      overflow-y: auto;
+      padding-left: 18px;
+      margin: 0;
+      font-size: 0.95rem;
+      color: #64748b;
+    }
+    #history li {
+      margin-bottom: 7px;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    #history li:hover {
+      color: #3b82f6;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
     <h1>Конвертер валют</h1>
-
-    <div class="api-status">
-      <div class="status-dot" id="statusDot"></div>
-      <div class="status-text" id="statusText">API backpack.tf: Ожидание...</div>
-    </div>
 
     <label for="amount">Сумма</label>
     <input type="number" id="amount" placeholder="Введите сумму" min="0" step="any" autocomplete="off" />
@@ -75,11 +170,8 @@
   const keyToUsd = 2.4;
   const keyToRef = 52.22;
   let usdRates = null;
-  let bpRate = null;
   const historyKey = 'converter_history';
   const settingsKey = 'converter_settings';
-  const ratesKey = 'usd_rates';
-  const bpKey = '68a1d6d01326fe092a02c00c';
 
   const amountInput = document.getElementById('amount');
   const fromSelect = document.getElementById('from');
@@ -87,16 +179,16 @@
   const resultDiv = document.getElementById('result');
   const historyList = document.getElementById('historyList');
   const convertBtn = document.getElementById('convertBtn');
-  const statusDot = document.getElementById('statusDot');
-  const statusText = document.getElementById('statusText');
 
   let history = JSON.parse(localStorage.getItem(historyKey)) || [];
   let settings = JSON.parse(localStorage.getItem(settingsKey)) || {};
+
   function renderHistory() {
-    historyList.innerHTML = history.map((item,i) =>
-      \`<li data-index="\${i}">\${item}</li>\`).join('');
+    historyList.innerHTML = history.map((item, i) =>
+      `<li data-index="${i}">${item}</li>`).join('');
   }
   renderHistory();
+
   function saveHistory() {
     localStorage.setItem(historyKey, JSON.stringify(history));
   }
@@ -124,6 +216,7 @@
     showError('');
     return true;
   }
+
   let errorTimeout;
   function showError(msg) {
     let errorEl = document.querySelector('.error-message');
@@ -136,120 +229,93 @@
       errorEl.textContent = msg;
       errorEl.classList.add('visible');
       clearTimeout(errorTimeout);
-      errorTimeout = setTimeout(() => { errorEl.classList.remove('visible'); }, 4000);
+      errorTimeout = setTimeout(() => {
+        errorEl.classList.remove('visible');
+      }, 4000);
     } else {
       errorEl.textContent = '';
       errorEl.classList.remove('visible');
     }
   }
 
-  async function loadUsdRates() {
-    convertBtn.disabled = true;
+  async function loadFloatRates() {
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
       usdRates = await res.json();
-      localStorage.setItem(ratesKey, JSON.stringify(usdRates));
-      convertBtn.disabled = false;
       convertCurrency();
     } catch {
-      const cached = localStorage.getItem(ratesKey);
-      if (cached) {
-        usdRates = JSON.parse(cached);
-        resultDiv.textContent = 'Загружены кэшированные курсы.';
-        convertBtn.disabled = false;
-        convertCurrency();
-      } else {
-        resultDiv.textContent = 'Ошибка загрузки курсов.';
-      }
-    }
-  }
-
-  async function checkBpApi() {
-    try {
-      const res = await fetch(\`https://backpack.tf/api/IGetPrices/v4?key=\${bpKey}\`);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      const itemName = "Mann Co. Supply Crate Key"; // пример названия
-      const entry = data.response.items?.[itemName]?.prices?.['6']?.Tradable?.Craftable?.['0'];
-      if (entry?.value) {
-        bpRate = entry.value;
-        statusDot.style.background = 'green';
-        statusText.textContent = 'API backpack.tf: Подключено';
-      } else {
-        throw new Error('Нет нужного поля в ответе');
-      }
-    } catch (e) {
-      console.error('BP API error:', e);
-      statusDot.style.background = 'red';
-      statusText.textContent = 'API backpack.tf: Ошибка подключения';
+      resultDiv.textContent = 'Ошибка загрузки курсов.';
     }
   }
 
   function convertCurrency() {
-    if (!validateAmount()) { resultDiv.textContent = '–'; return; }
-    if (!usdRates) { resultDiv.textContent = 'Курсы не загружены.'; return; }
-
+    if (!validateAmount() || !usdRates) {
+      resultDiv.textContent = '–';
+      return;
+    }
     const amt = parseFloat(amountInput.value);
     const from = fromSelect.value;
     const to = toSelect.value;
 
-    if (from === to) {
-      resultDiv.textContent = 'Выберите разные валюты.'; return;
-    }
-
-    let inUsd = 0;
-    switch (from) {
+    let inUsd;
+    switch(from) {
       case 'USD': inUsd = amt; break;
       case 'KZT': inUsd = amt / usdRates['kzt'].rate; break;
       case 'KEY': inUsd = amt * keyToUsd; break;
       case 'REF': inUsd = amt / keyToRef * keyToUsd; break;
     }
 
-    let result = 0;
-    if (to === 'KEY' && from === 'REF' && bpRate) {
-      result = amt / bpRate;
-    } else {
-      switch (to) {
-        case 'USD': result = inUsd; break;
-        case 'KZT': result = inUsd * usdRates['kzt'].rate; break;
-        case 'KEY': result = inUsd / keyToUsd; break;
-        case 'REF': result = inUsd / keyToUsd * keyToRef; break;
-      }
+    let result;
+    switch(to) {
+      case 'USD': result = inUsd; break;
+      case 'KZT': result = inUsd * usdRates['kzt'].rate; break;
+      case 'KEY': result = inUsd / keyToUsd; break;
+      case 'REF': result = inUsd / keyToUsd * keyToRef; break;
     }
 
-    const resultStr = \`Результат: \${result.toFixed(2)} \${to}\`;
+    const resultStr = `Результат: ${result.toFixed(2)} ${to}`;
     resultDiv.textContent = resultStr;
 
-    const historyItem = \`\${amt} \${from} → \${result.toFixed(2)} \${to}\`;
+    const historyItem = `${amt} ${from} → ${result.toFixed(2)} ${to}`;
     if (!history.includes(historyItem)) {
       history.unshift(historyItem);
       if (history.length > 10) history.pop();
       saveHistory();
       renderHistory();
     }
+
     saveSettings();
   }
 
-  amountInput.addEventListener('input', () => { validateAmount(); convertCurrency(); });
-  fromSelect.addEventListener('change', () => { convertCurrency(); saveSettings(); });
-  toSelect.addEventListener('change', () => { convertCurrency(); saveSettings(); });
+  amountInput.addEventListener('input', () => {
+    validateAmount();
+    convertCurrency(); // автоматическая конвертация
+  });
+  fromSelect.addEventListener('change', () => {
+    saveSettings();
+    convertCurrency();
+  });
+  toSelect.addEventListener('change', () => {
+    saveSettings();
+    convertCurrency();
+  });
+
   convertBtn.addEventListener('click', convertCurrency);
+
   historyList.addEventListener('click', e => {
     if (e.target.tagName !== 'LI') return;
-    const match = e.target.textContent.match(/^([\\d.]+) (\\w+) → ([\\d.]+) (\\w+)$/);
+    const text = e.target.textContent;
+    const match = text.match(/^([\d.]+) (\w+) → ([\d.]+) (\w+)$/);
     if (match) {
       amountInput.value = match[1];
       fromSelect.value = match[2];
       toSelect.value = match[4];
+      resultDiv.textContent = text.split('→')[1].trim();
       saveSettings();
-      convertCurrency();
     }
   });
 
-  loadUsdRates();
-  checkBpApi();
-  setInterval(checkBpApi, 300000); // каждые 5 минут
+  loadFloatRates();
 </script>
-
 </body>
 </html>
