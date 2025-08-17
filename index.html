@@ -74,7 +74,7 @@
 
   <!-- Боковой график USD → KZT -->
   <div class="card">
-    <h2>USD → KZT</h2>
+    <h2>USD → KZT (10 дней)</h2>
     <canvas id="chartUsdKzt"></canvas>
   </div>
 
@@ -99,7 +99,7 @@
 
   <!-- Боковой график KZT → USD -->
   <div class="card">
-    <h2>KZT → USD</h2>
+    <h2>KZT → USD (10 дней)</h2>
     <canvas id="chartKztUsd"></canvas>
   </div>
 
@@ -108,15 +108,22 @@
   let usdRates = null;
   const history = [];
 
-  async function loadRates() {
-    const res = await fetch('https://www.floatrates.com/daily/usd.json');
-    usdRates = await res.json();
+  async function loadFloatRates() {
+    try {
+      const res = await fetch('https://www.floatrates.com/daily/usd.json');
+      usdRates = await res.json();
+    } catch {
+      document.getElementById('result').textContent = 'Ошибка загрузки курсов.';
+    }
   }
 
   function convertCurrency() {
     if (!usdRates) return;
     const amt = parseFloat(document.getElementById('amount').value);
-    if (!amt || amt <= 0) return;
+    if (!amt || amt <= 0) {
+      document.getElementById('result').textContent = 'Введите корректную сумму.';
+      return;
+    }
     const from = document.getElementById('from').value;
     const to = document.getElementById('to').value;
 
@@ -136,45 +143,88 @@
 
   document.getElementById('convertBtn').onclick = convertCurrency;
 
-  // Инициализация графиков
+  // Графики
   const ctxUK = document.getElementById('chartUsdKzt').getContext('2d');
   const ctxKU = document.getElementById('chartKztUsd').getContext('2d');
   let chartUK, chartKU;
 
-  function renderCharts(rate) {
-    const labels = ['Текущий'];
-    const dataUK = [rate];
-    const dataKU = [1 / rate];
+  function createChart(ctx, label, data, color) {
+    return new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.date),
+        datasets: [{
+          label,
+          data: data.map(d => d.rate),
+          borderColor: color,
+          backgroundColor: color+'55',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 3,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: false },
+          x: { display: true, ticks: { maxRotation: 45, minRotation: 45 } }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
 
-    if (chartUK) {
-      chartUK.data.datasets[0].data = dataUK;
-      chartUK.update();
-      chartKU.data.datasets[0].data = dataKU;
-      chartKU.update();
-    } else {
-      chartUK = new Chart(ctxUK, {
-        type: 'bar',
-        data: { labels, datasets: [{ label: '', data: dataUK, backgroundColor: '#4a90e2' }] },
-        options: { scales: { y: { beginAtZero: false } }, plugins: { legend: { display: false } } }
-      });
-      chartKU = new Chart(ctxKU, {
-        type: 'bar',
-        data: { labels, datasets: [{ label: '', data: dataKU, backgroundColor: '#34c759' }] },
-        options: { scales: { y: { beginAtZero: false } }, plugins: { legend: { display: false } } }
-      });
+  async function loadHistoricalRates(base, symbol) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - 9);
+    const formatDate = d => d.toISOString().split('T')[0];
+    const url = `https://api.exchangerate.host/timeseries?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&base=${base}&symbols=${symbol}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (!json.rates) throw new Error('Нет данных');
+    return Object.entries(json.rates).map(([date, rates]) => ({
+      date,
+      rate: rates[symbol]
+    })).sort((a,b) => new Date(a.date) - new Date(b.date));
+  }
+
+  async function updateCharts() {
+    try {
+      const usdToKzt = await loadHistoricalRates('USD', 'KZT');
+      const kztToUsd = await loadHistoricalRates('KZT', 'USD');
+
+      if (chartUK) {
+        chartUK.data.labels = usdToKzt.map(d => d.date);
+        chartUK.data.datasets[0].data = usdToKzt.map(d => d.rate);
+        chartUK.update();
+
+        chartKU.data.labels = kztToUsd.map(d => d.date);
+        chartKU.data.datasets[0].data = kztToUsd.map(d => d.rate);
+        chartKU.update();
+      } else {
+        chartUK = createChart(ctxUK, 'USD → KZT', usdToKzt, '#4a90e2');
+        chartKU = createChart(ctxKU, 'KZT → USD', kztToUsd, '#34c759');
+      }
+    } catch (e) {
+      console.error('Ошибка загрузки исторических курсов:', e);
     }
   }
 
   async function init() {
-    await loadRates();
-    const rate = usdRates['kzt'].rate;
-    renderCharts(rate);
+    await loadFloatRates();
+    await updateCharts();
   }
 
   init();
+
+  // Обновлять курсы и графики каждые 10 минут
   setInterval(async () => {
-    await loadRates();
-    renderCharts(usdRates['kzt'].rate);
+    await loadFloatRates();
+    await updateCharts();
   }, 10 * 60 * 1000);
 </script>
 
