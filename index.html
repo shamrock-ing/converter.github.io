@@ -2,86 +2,169 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<title>Конвертер валют + Графики курсов</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Конвертер валют и графики курсов</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  /* Общие стили и фон */
   body {
-    font-family: 'Inter', sans-serif;
-    background: #f0f2f5;
     margin: 0;
     padding: 40px;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    font-family: 'Share Tech Mono', monospace;
+    color: #d1d5db;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    min-height: 100vh;
+    align-items: flex-start;
   }
-  .card {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    padding: 20px;
-    width: 280px;
-    box-sizing: border-box;
-  }
-  .converter {
-    max-width: 320px;
+
+  h1 {
+    width: 100%;
+    font-weight: 400;
+    font-size: 2.8rem;
+    letter-spacing: 0.1em;
+    color: #00ff99;
+    text-align: center;
+    margin-bottom: 0;
+    user-select: none;
+    text-shadow:
+       0 0 5px #00ff99,
+       0 0 10px #00ff99,
+       0 0 20px #00ff99;
   }
   h2 {
+    font-weight: 400;
+    font-size: 1.4rem;
     margin-top: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-    text-align: center;
+    margin-bottom: 20px;
+    color: #00cc7a;
+    user-select: none;
+    text-shadow:
+      0 0 4px #00cc7a;
   }
-  input, select, button {
-    width: 100%;
-    padding: 8px;
-    margin: 8px 0;
-    font-size: 1rem;
+
+  /* Карточки */
+  .card {
+    background: rgba(0,0,0,0.6);
+    border-radius: 10px;
+    box-shadow:
+      0 0 10px #00ff99,
+      inset 0 0 5px #00ff99;
+    padding: 30px 25px;
+    width: 320px;
+    box-sizing: border-box;
+    transition: box-shadow 0.3s ease;
   }
-  button {
-    background: #4a90e2;
-    color: white;
+  .card:hover {
+    box-shadow:
+      0 0 20px #00ff99,
+      inset 0 0 12px #00ff99;
+  }
+
+  /* Конвертер */
+  .converter input,
+  .converter select,
+  .converter button {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    margin: 12px 0;
+    padding: 12px 10px;
+    border-radius: 6px;
     border: none;
-    font-weight: 600;
+    outline: none;
+    background: #0f3d1f;
+    color: #a0f9be;
+    box-shadow:
+      inset 0 0 6px #00ff99;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    user-select: none;
+  }
+  .converter input::placeholder {
+    color: #7ee1a3;
+    font-style: italic;
+  }
+  .converter input:focus,
+  .converter select:focus {
+    background: #00ff99;
+    color: #003300;
+    box-shadow:
+      0 0 10px #00ff99;
+  }
+  .converter button {
     cursor: pointer;
-    border-radius: 4px;
+    font-weight: 700;
+    background: #00ff99;
+    color: #003300;
+    box-shadow: 0 0 10px #00ff99;
   }
-  button:hover {
-    background: #357ABD;
+  .converter button:hover {
+    background: #00cc7a;
+    box-shadow: 0 0 15px #00cc7a;
   }
+
   #result {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #00ff99;
+    margin: 24px 0 10px;
+    min-height: 1.8em;
     text-align: center;
-    font-size: 1.2rem;
-    margin: 16px 0;
-    font-weight: 600;
+    user-select: text;
   }
+
   #history {
-    margin-top: 16px;
+    font-size: 0.9rem;
+    color: #80ffb0;
+    max-height: 100px;
+    overflow-y: auto;
   }
   #history ul {
-    padding-left: 20px;
-    font-size: 0.9rem;
+    padding-left: 18px;
+    margin: 0;
   }
+  #history li {
+    margin-bottom: 4px;
+  }
+
+  /* Графики */
   canvas {
-    width: 100% !important;
-    height: 180px !important;
+    border-radius: 8px;
+    box-shadow:
+      0 0 10px #00ff99;
+  }
+
+  /* Адаптив */
+  @media(max-width: 1000px) {
+    body {
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 90vw;
+      max-width: 400px;
+    }
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <!-- Боковой график USD → KZT -->
+  <h1>Currency Converter</h1>
+
+  <!-- График USD → KZT -->
   <div class="card">
-    <h2>USD → KZT (10 дней)</h2>
+    <h2>USD → KZT (последние 10 дней)</h2>
     <canvas id="chartUsdKzt"></canvas>
   </div>
 
-  <!-- Основной конвертер -->
+  <!-- Конвертер -->
   <div class="card converter">
     <h2>Конвертер валют</h2>
-    <input type="number" id="amount" placeholder="Сумма" />
+    <input type="number" id="amount" placeholder="Введите сумму" />
     <select id="from">
       <option value="USD">USD</option>
       <option value="KZT">KZT</option>
@@ -93,13 +176,16 @@
       <option value="KEY">KEY</option>
     </select>
     <button id="convertBtn">Конвертировать</button>
-    <div id="result">—</div>
-    <div id="history"><h3>История:</h3><ul id="historyList"></ul></div>
+    <div id="result">–</div>
+    <div id="history">
+      <h3>История конвертаций:</h3>
+      <ul id="historyList"></ul>
+    </div>
   </div>
 
-  <!-- Боковой график KZT → USD -->
+  <!-- График KZT → USD -->
   <div class="card">
-    <h2>KZT → USD (10 дней)</h2>
+    <h2>KZT → USD (последние 10 дней)</h2>
     <canvas id="chartKztUsd"></canvas>
   </div>
 
@@ -157,18 +243,18 @@
           label,
           data: data.map(d => d.rate),
           borderColor: color,
-          backgroundColor: color+'55',
+          backgroundColor: color + '44',
           fill: true,
           tension: 0.3,
-          pointRadius: 3,
-          pointHoverRadius: 6
+          pointRadius: 4,
+          pointHoverRadius: 7
         }]
       },
       options: {
         responsive: true,
         scales: {
-          y: { beginAtZero: false },
-          x: { display: true, ticks: { maxRotation: 45, minRotation: 45 } }
+          y: { beginAtZero: false, ticks: { color: '#00ff99' }, grid: { color: '#004d33' } },
+          x: { ticks: { color: '#00ff99' }, grid: { color: '#004d33' } }
         },
         plugins: {
           legend: { display: false }
@@ -206,8 +292,8 @@
         chartKU.data.datasets[0].data = kztToUsd.map(d => d.rate);
         chartKU.update();
       } else {
-        chartUK = createChart(ctxUK, 'USD → KZT', usdToKzt, '#4a90e2');
-        chartKU = createChart(ctxKU, 'KZT → USD', kztToUsd, '#34c759');
+        chartUK = createChart(ctxUK, 'USD → KZT', usdToKzt, '#00ff99');
+        chartKU = createChart(ctxKU, 'KZT → USD', kztToUsd, '#00ff99');
       }
     } catch (e) {
       console.error('Ошибка загрузки исторических курсов:', e);
