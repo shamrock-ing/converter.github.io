@@ -1,161 +1,182 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Конвертер валют</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f5f5f5;
-      color: #333;
-      padding: 40px;
-      text-align: center;
-    }
-
-    .container {
-      background: #fff;
-      padding: 30px;
-      max-width: 400px;
-      margin: 0 auto;
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-    }
-
-    input, select, button {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      margin: 12px 0;
-      font-size: 1rem;
-    }
-
-    button {
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-      font-size: 1.2rem;
-    }
-
-    #history {
-      margin-top: 30px;
-      text-align: left;
-    }
-
-    #history h3 {
-      margin-bottom: 10px;
-    }
-
-    #history ul {
-      list-style: disc;
-      padding-left: 20px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Конвертер валют + Графики курсов</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    width: 280px;
+    box-sizing: border-box;
+  }
+  .converter {
+    max-width: 320px;
+  }
+  h2 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: center;
+  }
+  input, select, button {
+    width: 100%;
+    padding: 8px;
+    margin: 8px 0;
+    font-size: 1rem;
+  }
+  button {
+    background: #4a90e2;
+    color: white;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  button:hover {
+    background: #357ABD;
+  }
+  #result {
+    text-align: center;
+    font-size: 1.2rem;
+    margin: 16px 0;
+    font-weight: 600;
+  }
+  #history {
+    margin-top: 16px;
+  }
+  #history ul {
+    padding-left: 20px;
+    font-size: 0.9rem;
+  }
+  canvas {
+    width: 100% !important;
+    height: 180px !important;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <div class="container">
-    <h1>Конвертер валют</h1>
+  <!-- Боковой график USD → KZT -->
+  <div class="card">
+    <h2>USD → KZT</h2>
+    <canvas id="chartUsdKzt"></canvas>
+  </div>
 
-    <input type="number" id="amount" placeholder="Введите сумму" />
-
+  <!-- Основной конвертер -->
+  <div class="card converter">
+    <h2>Конвертер валют</h2>
+    <input type="number" id="amount" placeholder="Сумма" />
     <select id="from">
       <option value="USD">USD</option>
       <option value="KZT">KZT</option>
       <option value="KEY">KEY</option>
     </select>
-
     <select id="to">
       <option value="USD">USD</option>
       <option value="KZT">KZT</option>
       <option value="KEY">KEY</option>
     </select>
-
     <button id="convertBtn">Конвертировать</button>
-
     <div id="result">—</div>
-
-    <div id="history">
-      <h3>История:</h3>
-      <ul id="historyList"></ul>
-    </div>
+    <div id="history"><h3>История:</h3><ul id="historyList"></ul></div>
   </div>
 
-  <script>
-    const keyToUsd = 2.4;
-    let usdRates = null;
-    const history = [];
+  <!-- Боковой график KZT → USD -->
+  <div class="card">
+    <h2>KZT → USD</h2>
+    <canvas id="chartKztUsd"></canvas>
+  </div>
 
-    async function loadRates() {
-      try {
-        const res = await fetch('https://www.floatrates.com/daily/usd.json');
-        usdRates = await res.json();
-      } catch (error) {
-        document.getElementById('result').textContent = 'Ошибка загрузки курсов.';
-        console.error('Ошибка загрузки курса:', error);
-      }
+<script>
+  const keyToUsd = 2.4;
+  let usdRates = null;
+  const history = [];
+
+  async function loadRates() {
+    const res = await fetch('https://www.floatrates.com/daily/usd.json');
+    usdRates = await res.json();
+  }
+
+  function convertCurrency() {
+    if (!usdRates) return;
+    const amt = parseFloat(document.getElementById('amount').value);
+    if (!amt || amt <= 0) return;
+    const from = document.getElementById('from').value;
+    const to = document.getElementById('to').value;
+
+    let inUsd = (from === 'USD') ? amt
+      : (from === 'KZT') ? amt / usdRates['kzt'].rate
+      : amt * keyToUsd;
+
+    let result = (to === 'USD') ? inUsd
+      : (to === 'KZT') ? inUsd * usdRates['kzt'].rate
+      : inUsd / keyToUsd;
+
+    document.getElementById('result').textContent = `Результат: ${result.toFixed(2)} ${to}`;
+    history.unshift(`${amt} ${from} → ${result.toFixed(2)} ${to}`);
+    if (history.length > 5) history.pop();
+    document.getElementById('historyList').innerHTML = history.map(item => `<li>${item}</li>`).join('');
+  }
+
+  document.getElementById('convertBtn').onclick = convertCurrency;
+
+  // Инициализация графиков
+  const ctxUK = document.getElementById('chartUsdKzt').getContext('2d');
+  const ctxKU = document.getElementById('chartKztUsd').getContext('2d');
+  let chartUK, chartKU;
+
+  function renderCharts(rate) {
+    const labels = ['Текущий'];
+    const dataUK = [rate];
+    const dataKU = [1 / rate];
+
+    if (chartUK) {
+      chartUK.data.datasets[0].data = dataUK;
+      chartUK.update();
+      chartKU.data.datasets[0].data = dataKU;
+      chartKU.update();
+    } else {
+      chartUK = new Chart(ctxUK, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: '', data: dataUK, backgroundColor: '#4a90e2' }] },
+        options: { scales: { y: { beginAtZero: false } }, plugins: { legend: { display: false } } }
+      });
+      chartKU = new Chart(ctxKU, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: '', data: dataKU, backgroundColor: '#34c759' }] },
+        options: { scales: { y: { beginAtZero: false } }, plugins: { legend: { display: false } } }
+      });
     }
+  }
 
-    function convert() {
-      if (!usdRates) {
-        document.getElementById('result').textContent = 'Курсы ещё не загружены.';
-        return;
-      }
+  async function init() {
+    await loadRates();
+    const rate = usdRates['kzt'].rate;
+    renderCharts(rate);
+  }
 
-      const amount = parseFloat(document.getElementById('amount').value);
-      const from = document.getElementById('from').value;
-      const to = document.getElementById('to').value;
-
-      if (isNaN(amount) || amount <= 0) {
-        document.getElementById('result').textContent = 'Введите корректную сумму.';
-        return;
-      }
-
-      let amountInUsd;
-
-      if (from === 'USD') {
-        amountInUsd = amount;
-      } else if (from === 'KZT') {
-        if (!usdRates['kzt']) return;
-        amountInUsd = amount / usdRates['kzt'].rate;
-      } else if (from === 'KEY') {
-        amountInUsd = amount * keyToUsd;
-      }
-
-      let resultAmount;
-
-      if (to === 'USD') {
-        resultAmount = amountInUsd;
-      } else if (to === 'KZT') {
-        resultAmount = amountInUsd * usdRates['kzt'].rate;
-      } else if (to === 'KEY') {
-        resultAmount = amountInUsd / keyToUsd;
-      }
-
-      const resultText = `Результат: ${resultAmount.toFixed(2)} ${to}`;
-      document.getElementById('result').textContent = resultText;
-
-      // История
-      const entry = `${amount} ${from} → ${resultAmount.toFixed(2)} ${to}`;
-      history.unshift(entry);
-      if (history.length > 5) history.pop();
-
-      document.getElementById('historyList').innerHTML = history.map(item => `<li>${item}</li>`).join('');
-    }
-
-    document.getElementById('convertBtn').addEventListener('click', convert);
-
-    loadRates(); // Загрузим курсы при запуске
-  </script>
+  init();
+  setInterval(async () => {
+    await loadRates();
+    renderCharts(usdRates['kzt'].rate);
+  }, 10 * 60 * 1000);
+</script>
 
 </body>
 </html>
