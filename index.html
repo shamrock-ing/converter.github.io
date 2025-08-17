@@ -131,6 +131,34 @@
       color: #3b82f6;
       text-decoration: underline;
     }
+
+    /* ===== Mini REF↔KEY rate input block ===== */
+    .custom-rate {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      padding: 10px 14px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      font-size: 0.9rem;
+      color: #1e293b;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      z-index: 1000;
+    }
+    .custom-rate label {
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .custom-rate input {
+      width: 60px;
+      padding: 6px 8px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
   </style>
 </head>
 <body>
@@ -166,9 +194,16 @@
     </div>
   </div>
 
+  <!-- Мини-блок настройки курса REF:KEY -->
+  <div class="custom-rate">
+    <label for="customRefRate" title="Сколько Ref стоит 1 ключ">REF за 1 ключ:</label>
+    <input type="number" id="customRefRate" step="0.01" min="1" />
+  </div>
+
 <script>
   const keyToUsd = 2.4;
-  const keyToRef = 52.22;
+  let keyToRef = parseFloat(localStorage.getItem('customKeyToRef')) || 52.22;
+
   let usdRates = null;
   const historyKey = 'converter_history';
   const settingsKey = 'converter_settings';
@@ -179,6 +214,17 @@
   const resultDiv = document.getElementById('result');
   const historyList = document.getElementById('historyList');
   const convertBtn = document.getElementById('convertBtn');
+  const customRefRateInput = document.getElementById('customRefRate');
+
+  customRefRateInput.value = keyToRef.toFixed(2);
+  customRefRateInput.addEventListener('input', () => {
+    const val = parseFloat(customRefRateInput.value);
+    if (val && val > 0) {
+      keyToRef = val;
+      localStorage.setItem('customKeyToRef', keyToRef);
+      convertCurrency();
+    }
+  });
 
   let history = JSON.parse(localStorage.getItem(historyKey)) || [];
   let settings = JSON.parse(localStorage.getItem(settingsKey)) || {};
@@ -233,8 +279,8 @@
         errorEl.classList.remove('visible');
       }, 4000);
     } else {
-      errorEl.textContent = '';
       errorEl.classList.remove('visible');
+      errorEl.textContent = '';
     }
   }
 
@@ -242,7 +288,6 @@
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
       usdRates = await res.json();
-      convertCurrency();
     } catch {
       resultDiv.textContent = 'Ошибка загрузки курсов.';
     }
@@ -289,7 +334,7 @@
 
   amountInput.addEventListener('input', () => {
     validateAmount();
-    convertCurrency(); // автоматическая конвертация
+    convertCurrency(); // авто-конвертация
   });
   fromSelect.addEventListener('change', () => {
     saveSettings();
@@ -317,5 +362,6 @@
 
   loadFloatRates();
 </script>
+
 </body>
 </html>
