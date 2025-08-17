@@ -1,79 +1,38 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Конвертер валют</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .converter {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      width: 320px;
-    }
-    .converter h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .converter input,
-    .converter select,
-    .converter button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .converter button {
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-      border: none;
-    }
-    .converter button:hover {
-      background: #0056b3;
-    }
-    #result {
-      text-align: center;
-      margin-top: 20px;
-      font-weight: bold;
-    }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .converter { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 320px; }
+    .converter input, .converter select, .converter button { width: 100%; padding: 10px; margin: 8px 0; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+    .converter button { background: #007bff; color: white; cursor: pointer; border: none; }
+    .converter button:hover { background: #0056b3; }
+    #result { text-align: center; margin-top: 15px; font-weight: bold; }
   </style>
 </head>
 <body>
-
   <div class="converter">
     <h2>Конвертер валют</h2>
-    <input type="number" id="amount" placeholder="Введите сумму" />
-
+    <input type="number" id="amount" placeholder="Введите сумму">
     <select id="from">
       <option value="USD">USD</option>
       <option value="KZT">KZT</option>
       <option value="KEY">KEY</option>
     </select>
-
     <select id="to">
       <option value="USD">USD</option>
       <option value="KZT">KZT</option>
       <option value="KEY">KEY</option>
     </select>
-
     <button onclick="convert()">Конвертировать</button>
     <div id="result">Загрузка курса USD → KZT...</div>
   </div>
 
   <script>
     let usdToKzt = null;
-    const keyToUsd = 2.4; // 1 KEY = 2.4 USD
+    const keyToUsd = 2.4; // фиксированный курс
 
     async function fetchUSDRate() {
       try {
@@ -81,9 +40,10 @@
         const data = await response.json();
         usdToKzt = data.rates.KZT;
         document.getElementById("result").innerText = `1 USD = ${usdToKzt.toFixed(2)} KZT`;
-      } catch (error) {
-        usdToKzt = 470; // fallback
-        document.getElementById("result").innerText = "Ошибка загрузки курса. Используется значение по умолчанию: 1 USD = 470 KZT";
+      } catch (err) {
+        console.error(err);
+        usdToKzt = 470;
+        document.getElementById("result").innerText = "Ошибка API — используется курс 1 USD = 470 KZT";
       }
     }
 
@@ -105,22 +65,15 @@
       const amount = parseFloat(document.getElementById("amount").value);
       const from = document.getElementById("from").value;
       const to = document.getElementById("to").value;
-
       if (isNaN(amount) || amount < 0) {
-        document.getElementById("result").innerText = "Введите корректную сумму.";
-        return;
+        return document.getElementById("result").innerText = "Введите корректную сумму.";
       }
-
       if (!usdToKzt) {
-        document.getElementById("result").innerText = "Курс ещё загружается...";
-        return;
+        return document.getElementById("result").innerText = "Курс ещё загружается...";
       }
-
-      const usdAmount = amount * getRateToUSD(from);
-      const finalAmount = usdAmount * getRateFromUSD(to);
-
-      document.getElementById("result").innerText =
-        `${amount} ${from} = ${finalAmount.toFixed(2)} ${to}`;
+      const usd = amount * getRateToUSD(from);
+      const result = usd * getRateFromUSD(to);
+      document.getElementById("result").innerText = `${amount} ${from} = ${result.toFixed(2)} ${to}`;
     }
   </script>
 </body>
