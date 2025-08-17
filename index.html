@@ -2,17 +2,73 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<title>Конвертер валют на Floatrates</title>
+<title>Конвертер валют (USD, KZT, KEY)</title>
 <style>
-  body { font-family: Arial, sans-serif; max-width: 400px; margin: 2em auto; padding: 1em; }
-  label, select, input, button { display: block; width: 100%; margin: 0.5em 0; padding: 0.5em; }
-  button { cursor: pointer; }
-  h1, h2 { text-align: center; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: 360px;
+    margin: 3em auto;
+    padding: 1.5em;
+    background: #f9f9f9;
+    color: #222;
+  }
+  h1 {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 1.5em;
+    font-size: 1.5rem;
+  }
+  label {
+    font-size: 0.9rem;
+    margin-bottom: 0.25em;
+    display: block;
+    color: #555;
+  }
+  input, select {
+    width: 100%;
+    padding: 0.5em 0.6em;
+    margin-bottom: 1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    background: white;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 3px rgba(74,144,226,0.5);
+  }
+  button {
+    width: 100%;
+    padding: 0.55em 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    background: #4a90e2;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background: #357ABD;
+  }
+  #result {
+    margin-top: 1.5em;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #333;
+    min-height: 1.4em;
+  }
 </style>
 </head>
 <body>
 
-<h1>Конвертер валют (USD, KZT, KEY)</h1>
+<h1>Конвертер валют</h1>
 
 <label for="amount">Сумма</label>
 <input type="number" id="amount" placeholder="Введите сумму" />
@@ -33,19 +89,18 @@
 
 <button id="convertBtn">Конвертировать</button>
 
-<h2 id="result">Результат: —</h2>
+<div id="result">—</div>
 
 <script>
   const keyToUsd = 2.4; // 1 KEY = 2.4 USD
-  let usdRates = null; // Курс USD → остальные
+  let usdRates = null;
 
   async function loadUsdRates() {
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
-      if(!res.ok) throw new Error('Ошибка сети');
+      if (!res.ok) throw new Error('Ошибка сети');
       usdRates = await res.json();
-      console.log('Курсы USD загружены:', usdRates);
-    } catch(e) {
+    } catch (e) {
       document.getElementById('result').textContent = 'Ошибка загрузки курсов USD';
       console.error(e);
     }
@@ -68,7 +123,6 @@
 
     let amountInUsd;
 
-    // Приводим from к USD
     if (from === 'USD') {
       amountInUsd = amount;
     } else if (from === 'KZT') {
@@ -86,7 +140,6 @@
 
     let result;
 
-    // Конвертируем из USD в to
     if (to === 'USD') {
       result = amountInUsd;
     } else if (to === 'KZT') {
@@ -106,7 +159,6 @@
   }
 
   document.getElementById('convertBtn').addEventListener('click', convert);
-
   loadUsdRates();
 </script>
 
