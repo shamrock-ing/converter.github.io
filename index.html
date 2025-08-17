@@ -4,26 +4,42 @@
   <meta charset="UTF-8" />
   <title>Конвертер валют USD, KZT, KEY</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 400px; margin: 2em auto; }
-    label, select, input, button { display: block; width: 100%; margin: 0.5em 0; padding: 0.5em; }
-    h1 { text-align: center; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 2em auto;
+      padding: 1em;
+    }
+    label, select, input, button {
+      display: block;
+      width: 100%;
+      margin: 0.5em 0;
+      padding: 0.5em;
+      font-size: 1em;
+    }
+    button {
+      cursor: pointer;
+    }
+    h1, h2 {
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 
   <h1>Конвертер валют</h1>
 
-  <label for="amount">Сумма:</label>
+  <label for="amount">Сумма</label>
   <input type="number" id="amount" placeholder="Введите сумму" />
 
-  <label for="from">Из валюты:</label>
+  <label for="from">Из валюты</label>
   <select id="from">
     <option value="USD">USD</option>
     <option value="KZT">KZT</option>
     <option value="KEY">KEY</option>
   </select>
 
-  <label for="to">В валюту:</label>
+  <label for="to">В валюту</label>
   <select id="to">
     <option value="USD">USD</option>
     <option value="KZT">KZT</option>
@@ -35,69 +51,69 @@
   <h2 id="result">Результат: —</h2>
 
   <script>
-    const keyToUsdRate = 2.4; // 1 KEY = 2.4 USD
-    let usdToKztRate = null;
+    const keyToUsd = 2.4; // 1 KEY = 2.4 USD
+    let usdToKzt = null;
 
-    async function loadUsdToKzt() {
+    async function fetchUsdToKzt() {
       try {
-        const res = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=KZT');
-        const data = await res.json();
-        if (data && data.rates && data.rates.KZT) {
-          usdToKztRate = data.rates.KZT;
-          console.log('Курс USD → KZT:', usdToKztRate);
+        const resp = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=KZT');
+        const data = await resp.json();
+        if(data && data.rates && data.rates.KZT) {
+          usdToKzt = data.rates.KZT;
+          console.log('Курс USD → KZT:', usdToKzt);
         } else {
-          throw new Error('Неверный ответ API');
+          throw new Error('Ошибка в данных API');
         }
       } catch (e) {
-        document.getElementById('result').innerText = 'Ошибка загрузки курса USD → KZT.';
+        document.getElementById('result').textContent = 'Ошибка при загрузке курса USD → KZT';
         console.error(e);
       }
     }
 
     async function convert() {
-      if (!usdToKztRate) {
-        await loadUsdToKzt();
-        if (!usdToKztRate) return;
+      if (usdToKzt === null) {
+        await fetchUsdToKzt();
+        if (usdToKzt === null) return;
       }
 
       const amount = parseFloat(document.getElementById('amount').value);
-      const from = document.getElementById('from').value;
-      const to = document.getElementById('to').value;
-
       if (isNaN(amount)) {
-        document.getElementById('result').innerText = 'Введите корректную сумму.';
+        document.getElementById('result').textContent = 'Введите корректную сумму';
         return;
       }
 
+      const from = document.getElementById('from').value;
+      const to = document.getElementById('to').value;
+
       let amountInUsd;
 
-      // Перевод из исходной валюты в USD
+      // Приводим из "from" к USD
       if (from === 'USD') {
         amountInUsd = amount;
       } else if (from === 'KZT') {
-        amountInUsd = amount / usdToKztRate;
+        amountInUsd = amount / usdToKzt;
       } else if (from === 'KEY') {
-        amountInUsd = amount * keyToUsdRate;
+        amountInUsd = amount * keyToUsd;
       }
 
       let result;
 
-      // Перевод из USD в целевую валюту
+      // Конвертируем из USD в "to"
       if (to === 'USD') {
         result = amountInUsd;
       } else if (to === 'KZT') {
-        result = amountInUsd * usdToKztRate;
+        result = amountInUsd * usdToKzt;
       } else if (to === 'KEY') {
-        result = amountInUsd / keyToUsdRate;
+        result = amountInUsd / keyToUsd;
       }
 
-      document.getElementById('result').innerText = `Результат: ${result.toFixed(2)} ${to}`;
+      document.getElementById('result').textContent = `Результат: ${result.toFixed(2)} ${to}`;
     }
 
     document.getElementById('convertBtn').addEventListener('click', convert);
 
-    // Загружаем курс при старте страницы
-    loadUsdToKzt();
+    // Загружаем курс USD → KZT при старте
+    fetchUsdToKzt();
   </script>
 
 </body>
