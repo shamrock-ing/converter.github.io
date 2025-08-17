@@ -96,10 +96,8 @@
 <ul id="history"></ul>
 
 <script>
-  // Ключ API backpack.tf
   const backpackApiKey = '68a1d6d01326fe092a02c00c';
 
-  // Элементы
   const amountFrom = document.getElementById('amountFrom');
   const currencyFrom = document.getElementById('currencyFrom');
   const amountTo = document.getElementById('amountTo');
@@ -107,46 +105,39 @@
   const swapBtn = document.getElementById('swapBtn');
   const historyList = document.getElementById('history');
 
-  // Курсы валют (usd и kzt обновятся через API, key и ref — свои формулы)
   let rates = {
     usd: 1,
     kzt: 1,
   };
 
-  // Статические курсы, будут обновляться по backpack.tf API
-  let keyToUsd = 2.40; // KEY к USD (фикс)
-  let keyToRef = 52.22; // REF к KEY (будет обновляться)
-  
-  // Для предотвращения повторных обновлений
-  let updating = false;
+  // Фиксируем курс Refined Metal к USD (пример)
+  let refToUsd = 0.20;
 
-  // История конвертаций
+  // Цены в металле (Refined Metal) — обновим с backpack.tf API
+  let keyPriceMetal = 52.22; // стартовое значение
+  let refPriceMetal = 1;     // всегда 1 Refined Metal
+
+  let isUpdating = false;
   let history = JSON.parse(localStorage.getItem('history') || '[]');
 
-  // Загружаем курсы usd и kzt с FloatRates API
   async function loadFloatRates() {
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
       const data = await res.json();
       if(data.kzt && data.kzt.rate) {
         rates.kzt = data.kzt.rate;
-      } else {
-        console.warn('Не получили курс KZT');
       }
-      // usd всегда 1
       rates.usd = 1;
     } catch(e) {
       console.error('Ошибка загрузки курсов floatrates', e);
     }
   }
 
-  // Получить курс REF к KEY с backpack.tf API
-  async function loadBackpackTfRefRate() {
+  async function loadBackpackTfPrices() {
     if (!backpackApiKey) {
-      console.log('backpack.tf API ключ не указан, используем статический курс REF');
-      return keyToRef;
+      console.log('backpack.tf API ключ не указан, используются статичные значения');
+      return;
     }
-
     try {
       const url = `https://backpack.tf/api/IGetMarketPrices/v1?key=${backpackApiKey}`;
       const res = await fetch(url);
@@ -154,76 +145,31 @@
 
       if (!data.response || !data.response.items) {
         console.warn('backpack.tf API вернул неправильный ответ', data);
-        return keyToRef;
+        return;
       }
 
       const items = data.response.items;
 
-      const keyPrice = items['Mann Co. Supply Crate Key']?.value?.value || null;
-      const refPrice = items['Refined Metal']?.value?.value || null;
+      const keyItem = items['Mann Co. Supply Crate Key'];
+      const refItem = items['Refined Metal'];
 
-      if (!keyPrice || !refPrice) {
+      if (!keyItem || !refItem) {
         console.warn('Не найдены цены key или ref в backpack.tf');
-        return keyToRef;
+        return;
       }
 
-      // keyPrice и refPrice примерно в одних единицах (metal units), keyPrice ~ 50 ref
-      const refPerKey = keyPrice / refPrice;
+      keyPriceMetal = keyItem.value.value; // в Refined Metal
+      refPriceMetal = refItem.value.value; // обычно 1
 
-      console.log(`Курс KEY к REF от backpack.tf: ${refPerKey}`);
-
-      return refPerKey;
-
+      console.log(`Цены с backpack.tf: KEY=${keyPriceMetal} ref, REF=${refPriceMetal} ref`);
     } catch(e) {
       console.error('Ошибка при запросе backpack.tf API', e);
-      return keyToRef;
     }
   }
 
-  // Обновление курса keyToRef динамически
-  async function updateRefRate() {
-    const newRefRate = await loadBackpackTfRefRate();
-    if (newRefRate && !isNaN(newRefRate) && newRefRate > 0) {
-      keyToRef = newRefRate;
-    }
-    console.log('Текущий курс KEY к REF:', keyToRef);
-  }
-
-  // Функция конвертации
-  function convert(direction) {
-    const from = currencyFrom.value;
-    const to = currencyTo.value;
-
-    let fromAmount = parseFloat(amountFrom.value);
-    let toAmount = parseFloat(amountTo.value);
-
-    if (direction === 'forward') {
-      if (isNaN(fromAmount) || fromAmount <= 0) {
-        amountFrom.classList.add('error');
-        return;
-      } else {
-        amountFrom.classList.remove('error');
-      }
-      toAmount = convertCurrency(fromAmount, from, to);
-      amountTo.value = toAmount.toFixed(4);
-    } else if (direction === 'backward') {
-      if (isNaN(toAmount) || toAmount <= 0) {
-        amountTo.classList.add('error');
-        return;
-      } else {
-        amountTo.classList.remove('error');
-      }
-      fromAmount = convertCurrency(toAmount, to, from);
-      amountFrom.value = fromAmount.toFixed(4);
-    }
-
-    saveHistory(fromAmount, from, toAmount, to);
-    renderHistory();
-  }
-
-  // Функция конвертации между валютами с учетом курсов и формул
   function convertCurrency(amount, from, to) {
-    // Приводим все к USD
+    if (isNaN(amount) || amount <= 0) return 0;
+
     let amountInUsd;
 
     switch(from) {
@@ -234,17 +180,15 @@
         amountInUsd = amount / rates.kzt;
         break;
       case 'key':
-        amountInUsd = amount * keyToUsd;
+        amountInUsd = amount * keyPriceMetal * refToUsd;
         break;
       case 'ref':
-        // REF -> KEY -> USD
-        amountInUsd = (amount / keyToRef) * keyToUsd;
+        amountInUsd = amount * refToUsd;
         break;
       default:
         amountInUsd = amount;
     }
 
-    // USD -> to
     let result;
 
     switch(to) {
@@ -255,11 +199,10 @@
         result = amountInUsd * rates.kzt;
         break;
       case 'key':
-        result = amountInUsd / keyToUsd;
+        result = amountInUsd / (keyPriceMetal * refToUsd);
         break;
       case 'ref':
-        // USD -> KEY -> REF
-        result = (amountInUsd / keyToUsd) * keyToRef;
+        result = amountInUsd / refToUsd;
         break;
       default:
         result = amountInUsd;
@@ -268,102 +211,96 @@
     return result;
   }
 
-  // Сохраняем в историю
   function saveHistory(fromAmount, from, toAmount, to) {
-    const record = `${fromAmount.toFixed(4)} ${from} = ${toAmount.toFixed(4)} ${to}`;
+    const record = `${fromAmount.toFixed(4)} ${from.toUpperCase()} → ${toAmount.toFixed(4)} ${to.toUpperCase()}`;
     history.unshift(record);
     if (history.length > 10) history.pop();
     localStorage.setItem('history', JSON.stringify(history));
+    renderHistory();
   }
 
-  // Отрисовка истории
   function renderHistory() {
     historyList.innerHTML = '';
-    history.forEach((item, i) => {
+    history.forEach(item => {
       const li = document.createElement('li');
       li.textContent = item;
-      li.dataset.index = i;
+      li.addEventListener('click', () => {
+        // При клике вставляем запись в поля
+        const parts = item.split(' ');
+        if(parts.length >= 4) {
+          amountFrom.value = parseFloat(parts[0]);
+          currencyFrom.value = parts[1].toLowerCase();
+          amountTo.value = parseFloat(parts[3]);
+          currencyTo.value = parts[4].toLowerCase();
+        }
+      });
       historyList.appendChild(li);
     });
   }
 
-  // Восстановление настроек из localStorage
-  function restoreSettings() {
-    if (history.length > 0) {
-      const last = history[0].split(' ');
-      if (last.length >= 4) {
-        amountFrom.value = last[0];
-        currencyFrom.value = last[1];
-        amountTo.value = last[3];
-        currencyTo.value = last[4];
+  function convert(direction) {
+    const from = currencyFrom.value;
+    const to = currencyTo.value;
+
+    let fromAmountVal = parseFloat(amountFrom.value);
+    let toAmountVal = parseFloat(amountTo.value);
+
+    if (direction === 'forward') {
+      if (isNaN(fromAmountVal) || fromAmountVal <= 0) {
+        amountFrom.classList.add('error');
+        return;
+      } else {
+        amountFrom.classList.remove('error');
       }
+      const converted = convertCurrency(fromAmountVal, from, to);
+      amountTo.value = converted.toFixed(4);
+      saveHistory(fromAmountVal, from, converted, to);
+    } else if (direction === 'backward') {
+      if (isNaN(toAmountVal) || toAmountVal <= 0) {
+        amountTo.classList.add('error');
+        return;
+      } else {
+        amountTo.classList.remove('error');
+      }
+      const converted = convertCurrency(toAmountVal, to, from);
+      amountFrom.value = converted.toFixed(4);
+      saveHistory(converted, from, toAmountVal, to);
     }
   }
 
-  // Дебаунс
-  function debounce(func, delay) {
-    let timer;
-    return function(...args) {
-      clearTimeout(timer);
-      timer = setTimeout(() => func.apply(this, args), delay);
-    };
-  }
-
-  // Обработчики
-  amountFrom.addEventListener('input', debounce(() => convert('forward'), 300));
+  amountFrom.addEventListener('input', () => convert('forward'));
   currencyFrom.addEventListener('change', () => convert('forward'));
-  amountTo.addEventListener('input', debounce(() => convert('backward'), 300));
+  amountTo.addEventListener('input', () => convert('backward'));
   currencyTo.addEventListener('change', () => convert('forward'));
 
   swapBtn.addEventListener('click', () => {
-    const tmpCur = currencyFrom.value;
+    // Поменять валюты
+    const tempCurrency = currencyFrom.value;
     currencyFrom.value = currencyTo.value;
-    currencyTo.value = tmpCur;
+    currencyTo.value = tempCurrency;
 
-    const tmpAmt = amountFrom.value;
+    // Поменять суммы
+    const tempAmount = amountFrom.value;
     amountFrom.value = amountTo.value;
-    amountTo.value = tmpAmt;
+    amountTo.value = tempAmount;
 
     convert('forward');
   });
 
-  historyList.addEventListener('click', e => {
-    if(e.target.tagName !== 'LI') return;
-    const idx = +e.target.dataset.index;
-    if(idx >= 0 && idx < history.length) {
-      const parts = history[idx].split(' ');
-      if(parts.length >= 4) {
-        amountFrom.value = parts[0];
-        currencyFrom.value = parts[1];
-        amountTo.value = parts[3];
-        currencyTo.value = parts[4];
-        convert('forward');
-      }
-    }
-  });
-
-  // Инициализация
-  async function init() {
+  async function updateAllRates() {
+    if (isUpdating) return;
+    isUpdating = true;
     await loadFloatRates();
-    await updateRefRate();
-    restoreSettings();
-    if(amountFrom.value) {
-      convert('forward');
-    } else if(amountTo.value) {
-      convert('backward');
-    }
-    renderHistory();
+    await loadBackpackTfPrices();
+    convert('forward');
+    isUpdating = false;
+  }
 
-    // Обновление каждые 10 минут
-    setInterval(async () => {
-      if(!updating) {
-        updating = true;
-        await loadFloatRates();
-        await updateRefRate();
-        updating = false;
-        if(amountFrom.value) convert('forward');
-      }
-    }, 600000);
+  function init() {
+    renderHistory();
+    updateAllRates();
+    // Обновлять курсы каждые 10 минут
+    setInterval(updateAllRates, 10 * 60 * 1000);
   }
 
   init();
