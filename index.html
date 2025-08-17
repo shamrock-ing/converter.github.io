@@ -2,79 +2,87 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Конвертер валют</title>
+  <title>Конвертер валют (USD, KZT, KEY)</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .converter { background: white; padding: 25px 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 320px; }
-    .converter input, .converter select, .converter button { width: 100%; padding: 10px; margin: 8px 0; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-    .converter button { background: #007bff; color: white; cursor: pointer; border: none; }
-    .converter button:hover { background: #0056b3; }
-    #result { text-align: center; margin-top: 15px; font-weight: bold; }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    select, input { padding: 8px; margin: 10px 0; width: 100%; }
+    h1 { text-align: center; }
   </style>
 </head>
 <body>
-  <div class="converter">
-    <h2>Конвертер валют</h2>
-    <input type="number" id="amount" placeholder="Введите сумму">
-    <select id="from">
-      <option value="USD">USD</option>
-      <option value="KZT">KZT</option>
-      <option value="KEY">KEY</option>
-    </select>
-    <select id="to">
-      <option value="USD">USD</option>
-      <option value="KZT">KZT</option>
-      <option value="KEY">KEY</option>
-    </select>
-    <button onclick="convert()">Конвертировать</button>
-    <div id="result">Загрузка курса USD → KZT...</div>
-  </div>
+
+  <h1>Конвертер валют</h1>
+
+  <label>Сумма:</label>
+  <input type="number" id="amount" placeholder="Введите сумму" />
+
+  <label>Из валюты:</label>
+  <select id="fromCurrency">
+    <option value="USD">USD</option>
+    <option value="KZT">KZT</option>
+    <option value="KEY">KEY</option>
+  </select>
+
+  <label>В валюту:</label>
+  <select id="toCurrency">
+    <option value="USD">USD</option>
+    <option value="KZT">KZT</option>
+    <option value="KEY">KEY</option>
+  </select>
+
+  <button onclick="convertCurrency()">Конвертировать</button>
+
+  <h2 id="result">Результат: —</h2>
 
   <script>
-    let usdToKzt = null;
-    const keyToUsd = 2.4; // фиксированный курс
+    let usdToKztRate = 0;
+    const keyToUsdRate = 2.4;
 
-    async function fetchUSDRate() {
+    // Получение курса USD → KZT при загрузке
+    async function fetchRates() {
       try {
-        const response = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=KZT");
+        const response = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=KZT');
         const data = await response.json();
-        usdToKzt = data.rates.KZT;
-        document.getElementById("result").innerText = `1 USD = ${usdToKzt.toFixed(2)} KZT`;
-      } catch (err) {
-        console.error(err);
-        usdToKzt = 470;
-        document.getElementById("result").innerText = "Ошибка API — используется курс 1 USD = 470 KZT";
+        usdToKztRate = data.rates.KZT;
+        console.log('Курс USD → KZT:', usdToKztRate);
+      } catch (error) {
+        document.getElementById("result").innerText = "Ошибка загрузки курса USD → KZT.";
+        console.error("Ошибка API:", error);
       }
     }
 
-    fetchUSDRate();
-
-    function getRateToUSD(currency) {
-      if (currency === "USD") return 1;
-      if (currency === "KEY") return keyToUsd;
-      if (currency === "KZT") return 1 / usdToKzt;
-    }
-
-    function getRateFromUSD(currency) {
-      if (currency === "USD") return 1;
-      if (currency === "KEY") return 1 / keyToUsd;
-      if (currency === "KZT") return usdToKzt;
-    }
-
-    function convert() {
+    async function convertCurrency() {
       const amount = parseFloat(document.getElementById("amount").value);
-      const from = document.getElementById("from").value;
-      const to = document.getElementById("to").value;
-      if (isNaN(amount) || amount < 0) {
-        return document.getElementById("result").innerText = "Введите корректную сумму.";
+      const from = document.getElementById("fromCurrency").value;
+      const to = document.getElementById("toCurrency").value;
+
+      if (isNaN(amount)) {
+        document.getElementById("result").innerText = "Введите корректную сумму.";
+        return;
       }
-      if (!usdToKzt) {
-        return document.getElementById("result").innerText = "Курс ещё загружается...";
+
+      if (!usdToKztRate) {
+        await fetchRates();
       }
-      const usd = amount * getRateToUSD(from);
-      const result = usd * getRateFromUSD(to);
-      document.getElementById("result").innerText = `${amount} ${from} = ${result.toFixed(2)} ${to}`;
+
+      let usdAmount;
+
+      // Переводим всё сначала в USD
+      if (from === "USD") usdAmount = amount;
+      else if (from === "KZT") usdAmount = amount / usdToKztRate;
+      else if (from === "KEY") usdAmount = amount * keyToUsdRate;
+
+      // Переводим из USD в целевую валюту
+      let result;
+      if (to === "USD") result = usdAmount;
+      else if (to === "KZT") result = usdAmount * usdToKztRate;
+      else if (to === "KEY") result = usdAmount / keyToUsdRate;
+
+      document.getElementById("result").innerText = `Результат: ${result.toFixed(2)} ${to}`;
     }
+
+    // Загружаем курс при старте
+    fetchRates();
   </script>
 </body>
 </html>
