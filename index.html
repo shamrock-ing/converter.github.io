@@ -3,377 +3,319 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Конвертер валют</title>
+<title>Конвертер валют с backpack.tf API</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
   body {
-    margin: 0; padding: 40px 20px;
-    background: #f7f9fc;
-    font-family: 'Inter', sans-serif;
-    color: #222;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .container {
-    background: #fff;
-    padding: 30px 40px 40px;
-    border-radius: 14px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    color: #333;
     max-width: 480px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
   }
   h1 {
-    font-weight: 600;
-    font-size: 2.2rem;
-    margin-bottom: 30px;
-    color: #1a1a1a;
-    user-select: none;
+    text-align: center;
   }
   label {
-    align-self: flex-start;
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: #444;
-    user-select: none;
-  }
-  .row {
-    display: flex;
-    width: 100%;
-    gap: 12px;
-    margin-bottom: 18px;
-  }
-  .col {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+    display: block;
+    margin-top: 15px;
   }
   input, select {
     width: 100%;
-    padding: 14px 16px;
-    border: 1.8px solid #cbd5e1;
-    border-radius: 10px;
+    padding: 8px 12px;
+    margin-top: 5px;
     font-size: 1rem;
-    font-weight: 400;
-    color: #1f2937;
-    background: #fefefe;
-    transition:
-      border-color 0.3s ease,
-      box-shadow 0.3s ease;
-  }
-  input::placeholder {
-    color: #94a3b8;
-  }
-  input:focus, select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 8px #3b82f6aa;
-    background: #fff;
-  }
-  input.error, select.error {
-    border-color: #ef4444;
-    box-shadow: 0 0 8px #ef4444aa;
-    background: #ffe6e6;
-  }
-  .error-message {
-    color: #ef4444;
-    font-size: 0.85rem;
-    margin-top: -14px;
-    margin-bottom: 10px;
-    align-self: flex-start;
-    user-select: none;
-    height: 18px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  .error-message.visible {
-    opacity: 1;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
   }
   button {
+    margin-top: 20px;
     width: 100%;
-    padding: 15px 0;
+    background: #0077cc;
     border: none;
-    border-radius: 12px;
-    background-color: #3b82f6;
-    color: #fff;
-    font-weight: 600;
-    font-size: 1.15rem;
+    color: white;
+    font-size: 1.1rem;
+    padding: 12px;
+    border-radius: 8px;
     cursor: pointer;
-    transition:
-      background-color 0.3s ease,
-      transform 0.2s ease;
-    user-select: none;
+    transition: background 0.3s ease;
   }
   button:hover {
-    background-color: #2563eb;
-    transform: scale(1.05);
-  }
-  button:active {
-    transform: scale(0.98);
+    background: #005fa3;
   }
   #history {
-    margin-top: 28px;
-    width: 100%;
-  }
-  #history h3 {
-    margin-bottom: 12px;
-    font-weight: 600;
-    font-size: 1rem;
-    color: #475569;
-    user-select: none;
-  }
-  #history ul {
-    max-height: 130px;
+    margin-top: 25px;
+    max-height: 150px;
     overflow-y: auto;
-    padding-left: 18px;
-    margin: 0;
-    font-size: 0.95rem;
-    color: #64748b;
+    border-top: 1px solid #ccc;
+    padding-top: 15px;
   }
   #history li {
-    margin-bottom: 7px;
     cursor: pointer;
-    transition: color 0.2s ease;
+    padding: 5px 8px;
+    border-radius: 5px;
   }
   #history li:hover {
-    color: #3b82f6;
-    text-decoration: underline;
+    background: #d0e7ff;
+  }
+  .error {
+    border-color: #cc0000 !important;
   }
 </style>
 </head>
 <body>
+<h1>Конвертер валют</h1>
 
-  <div class="container">
-    <h1>Конвертер валют</h1>
+<label for="amountFrom">Сумма (из):</label>
+<input type="number" id="amountFrom" min="0" step="any" />
 
-    <div class="row">
-      <div class="col">
-        <label for="amountFrom">Сумма (От)</label>
-        <input type="number" id="amountFrom" placeholder="Введите сумму" min="0" step="any" autocomplete="off" />
-        <div class="error-message" id="errorFrom"></div>
-      </div>
-      <div class="col">
-        <label for="currencyFrom">Валюта (От)</label>
-        <select id="currencyFrom">
-          <option value="USD">USD</option>
-          <option value="KZT">KZT</option>
-          <option value="KEY">KEY</option>
-          <option value="REF">REF</option>
-        </select>
-      </div>
-    </div>
+<label for="currencyFrom">Валюта (из):</label>
+<select id="currencyFrom">
+  <option value="usd">USD</option>
+  <option value="kzt">KZT</option>
+  <option value="key">KEY</option>
+  <option value="ref">REF</option>
+</select>
 
-    <div class="row">
-      <div class="col">
-        <label for="amountTo">Сумма (К)</label>
-        <input type="number" id="amountTo" placeholder="Результат" min="0" step="any" autocomplete="off" />
-        <div class="error-message" id="errorTo"></div>
-      </div>
-      <div class="col">
-        <label for="currencyTo">Валюта (К)</label>
-        <select id="currencyTo">
-          <option value="USD">USD</option>
-          <option value="KZT">KZT</option>
-          <option value="KEY">KEY</option>
-          <option value="REF">REF</option>
-        </select>
-      </div>
-    </div>
+<label for="amountTo">Сумма (в):</label>
+<input type="number" id="amountTo" min="0" step="any" />
 
-    <button id="swapBtn" title="Поменять валюты местами">⇄ Поменять валюты</button>
+<label for="currencyTo">Валюта (в):</label>
+<select id="currencyTo">
+  <option value="usd">USD</option>
+  <option value="kzt">KZT</option>
+  <option value="key">KEY</option>
+  <option value="ref">REF</option>
+</select>
 
-    <div id="history">
-      <h3>История конвертаций:</h3>
-      <ul id="historyList"></ul>
-    </div>
-  </div>
+<button id="swapBtn">Поменять местами валюты и суммы</button>
+
+<ul id="history"></ul>
 
 <script>
-  const keyToUsd = 2.4;
-  const keyToRef = 52.22;
-  const historyKey = 'converter_history_v2';
-  const settingsKey = 'converter_settings_v2';
-
-  let usdRates = null;
-  let updating = false; // Флаг обновления курсов
+  // Ключ API backpack.tf
+  const backpackApiKey = '68a1d6d01326fe092a02c00c';
 
   // Элементы
   const amountFrom = document.getElementById('amountFrom');
-  const amountTo = document.getElementById('amountTo');
   const currencyFrom = document.getElementById('currencyFrom');
+  const amountTo = document.getElementById('amountTo');
   const currencyTo = document.getElementById('currencyTo');
-  const errorFrom = document.getElementById('errorFrom');
-  const errorTo = document.getElementById('errorTo');
-  const historyList = document.getElementById('historyList');
   const swapBtn = document.getElementById('swapBtn');
+  const historyList = document.getElementById('history');
 
-  // История и настройки из localStorage
-  let history = JSON.parse(localStorage.getItem(historyKey)) || [];
-  let settings = JSON.parse(localStorage.getItem(settingsKey)) || {};
+  // Курсы валют (usd и kzt обновятся через API, key и ref — свои формулы)
+  let rates = {
+    usd: 1,
+    kzt: 1,
+  };
 
-  // Отрисовка истории
-  function renderHistory() {
-    historyList.innerHTML = history.map((item,i) =>
-      `<li data-index="${i}">${item}</li>`).join('');
-  }
+  // Статические курсы, будут обновляться по backpack.tf API
+  let keyToUsd = 2.40; // KEY к USD (фикс)
+  let keyToRef = 52.22; // REF к KEY (будет обновляться)
+  
+  // Для предотвращения повторных обновлений
+  let updating = false;
 
-  // Сохраняем историю
-  function saveHistory() {
-    localStorage.setItem(historyKey, JSON.stringify(history));
-  }
-  // Сохраняем настройки
-  function saveSettings() {
-    settings.amountFrom = amountFrom.value;
-    settings.amountTo = amountTo.value;
-    settings.currencyFrom = currencyFrom.value;
-    settings.currencyTo = currencyTo.value;
-    localStorage.setItem(settingsKey, JSON.stringify(settings));
-  }
-  // Восстанавливаем настройки
-  function restoreSettings() {
-    if (settings.amountFrom !== undefined) amountFrom.value = settings.amountFrom;
-    if (settings.amountTo !== undefined) amountTo.value = settings.amountTo;
-    if (settings.currencyFrom) currencyFrom.value = settings.currencyFrom;
-    if (settings.currencyTo) currencyTo.value = settings.currencyTo;
-  }
+  // История конвертаций
+  let history = JSON.parse(localStorage.getItem('history') || '[]');
 
-  // Валидация суммы
-  function validateAmount(inputEl, errorEl) {
-    const val = parseFloat(inputEl.value);
-    if (isNaN(val) || val <= 0) {
-      inputEl.classList.add('error');
-      errorEl.textContent = 'Введите сумму больше 0';
-      errorEl.classList.add('visible');
-      return false;
-    }
-    inputEl.classList.remove('error');
-    errorEl.textContent = '';
-    errorEl.classList.remove('visible');
-    return true;
-  }
-
-  // Загрузка курсов с floatrates (USD базис)
+  // Загружаем курсы usd и kzt с FloatRates API
   async function loadFloatRates() {
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
-      usdRates = await res.json();
-      //console.log('Курсы обновлены', usdRates);
-    } catch {
-      alert('Ошибка загрузки курсов валют.');
+      const data = await res.json();
+      if(data.kzt && data.kzt.rate) {
+        rates.kzt = data.kzt.rate;
+      } else {
+        console.warn('Не получили курс KZT');
+      }
+      // usd всегда 1
+      rates.usd = 1;
+    } catch(e) {
+      console.error('Ошибка загрузки курсов floatrates', e);
     }
   }
 
-  // Конвертация валюты: fromAmount → toAmount
-  // direction: 'forward' — из amountFrom, 'backward' — из amountTo
+  // Получить курс REF к KEY с backpack.tf API
+  async function loadBackpackTfRefRate() {
+    if (!backpackApiKey) {
+      console.log('backpack.tf API ключ не указан, используем статический курс REF');
+      return keyToRef;
+    }
+
+    try {
+      const url = `https://backpack.tf/api/IGetMarketPrices/v1?key=${backpackApiKey}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.response || !data.response.items) {
+        console.warn('backpack.tf API вернул неправильный ответ', data);
+        return keyToRef;
+      }
+
+      const items = data.response.items;
+
+      const keyPrice = items['Mann Co. Supply Crate Key']?.value?.value || null;
+      const refPrice = items['Refined Metal']?.value?.value || null;
+
+      if (!keyPrice || !refPrice) {
+        console.warn('Не найдены цены key или ref в backpack.tf');
+        return keyToRef;
+      }
+
+      // keyPrice и refPrice примерно в одних единицах (metal units), keyPrice ~ 50 ref
+      const refPerKey = keyPrice / refPrice;
+
+      console.log(`Курс KEY к REF от backpack.tf: ${refPerKey}`);
+
+      return refPerKey;
+
+    } catch(e) {
+      console.error('Ошибка при запросе backpack.tf API', e);
+      return keyToRef;
+    }
+  }
+
+  // Обновление курса keyToRef динамически
+  async function updateRefRate() {
+    const newRefRate = await loadBackpackTfRefRate();
+    if (newRefRate && !isNaN(newRefRate) && newRefRate > 0) {
+      keyToRef = newRefRate;
+    }
+    console.log('Текущий курс KEY к REF:', keyToRef);
+  }
+
+  // Функция конвертации
   function convert(direction) {
-    if (!usdRates) return;
+    const from = currencyFrom.value;
+    const to = currencyTo.value;
 
-    let fromVal, toVal;
-    if(direction === 'forward') {
-      if (!validateAmount(amountFrom, errorFrom)) {
-        amountTo.value = '';
+    let fromAmount = parseFloat(amountFrom.value);
+    let toAmount = parseFloat(amountTo.value);
+
+    if (direction === 'forward') {
+      if (isNaN(fromAmount) || fromAmount <= 0) {
+        amountFrom.classList.add('error');
         return;
+      } else {
+        amountFrom.classList.remove('error');
       }
-      fromVal = parseFloat(amountFrom.value);
-    } else {
-      if (!validateAmount(amountTo, errorTo)) {
-        amountFrom.value = '';
+      toAmount = convertCurrency(fromAmount, from, to);
+      amountTo.value = toAmount.toFixed(4);
+    } else if (direction === 'backward') {
+      if (isNaN(toAmount) || toAmount <= 0) {
+        amountTo.classList.add('error');
         return;
+      } else {
+        amountTo.classList.remove('error');
       }
-      toVal = parseFloat(amountTo.value);
+      fromAmount = convertCurrency(toAmount, to, from);
+      amountFrom.value = fromAmount.toFixed(4);
     }
 
-    const fromCur = currencyFrom.value;
-    const toCur = currencyTo.value;
-
-    // Преобразуем в USD
-    function toUsd(amount, cur) {
-      switch(cur) {
-        case 'USD': return amount;
-        case 'KZT': return amount / usdRates['kzt'].rate;
-        case 'KEY': return amount * keyToUsd;
-        case 'REF': return amount / keyToRef * keyToUsd;
-        default: return 0;
-      }
-    }
-    // USD → целевая валюта
-    function fromUsd(amount, cur) {
-      switch(cur) {
-        case 'USD': return amount;
-        case 'KZT': return amount * usdRates['kzt'].rate;
-        case 'KEY': return amount / keyToUsd;
-        case 'REF': return amount / keyToUsd * keyToRef;
-        default: return 0;
-      }
-    }
-
-    if(direction === 'forward') {
-      const usdAmount = toUsd(fromVal, fromCur);
-      const res = fromUsd(usdAmount, toCur);
-      amountTo.value = res.toFixed(4);
-      errorTo.textContent = '';
-      amountTo.classList.remove('error');
-    } else {
-      const usdAmount = toUsd(toVal, toCur);
-      const res = fromUsd(usdAmount, fromCur);
-      amountFrom.value = res.toFixed(4);
-      errorFrom.textContent = '';
-      amountFrom.classList.remove('error');
-    }
-
-    // Обновляем историю
-    const histStr = `${amountFrom.value} ${fromCur} → ${amountTo.value} ${toCur}`;
-    if (!history.includes(histStr)) {
-      history.unshift(histStr);
-      if (history.length > 10) history.pop();
-      saveHistory();
-      renderHistory();
-    }
-
-    saveSettings();
+    saveHistory(fromAmount, from, toAmount, to);
+    renderHistory();
   }
 
-  // Обработчики ввода с задержкой debounce, чтобы не слишком часто считать
-  function debounce(fn, delay) {
+  // Функция конвертации между валютами с учетом курсов и формул
+  function convertCurrency(amount, from, to) {
+    // Приводим все к USD
+    let amountInUsd;
+
+    switch(from) {
+      case 'usd':
+        amountInUsd = amount;
+        break;
+      case 'kzt':
+        amountInUsd = amount / rates.kzt;
+        break;
+      case 'key':
+        amountInUsd = amount * keyToUsd;
+        break;
+      case 'ref':
+        // REF -> KEY -> USD
+        amountInUsd = (amount / keyToRef) * keyToUsd;
+        break;
+      default:
+        amountInUsd = amount;
+    }
+
+    // USD -> to
+    let result;
+
+    switch(to) {
+      case 'usd':
+        result = amountInUsd;
+        break;
+      case 'kzt':
+        result = amountInUsd * rates.kzt;
+        break;
+      case 'key':
+        result = amountInUsd / keyToUsd;
+        break;
+      case 'ref':
+        // USD -> KEY -> REF
+        result = (amountInUsd / keyToUsd) * keyToRef;
+        break;
+      default:
+        result = amountInUsd;
+    }
+
+    return result;
+  }
+
+  // Сохраняем в историю
+  function saveHistory(fromAmount, from, toAmount, to) {
+    const record = `${fromAmount.toFixed(4)} ${from} = ${toAmount.toFixed(4)} ${to}`;
+    history.unshift(record);
+    if (history.length > 10) history.pop();
+    localStorage.setItem('history', JSON.stringify(history));
+  }
+
+  // Отрисовка истории
+  function renderHistory() {
+    historyList.innerHTML = '';
+    history.forEach((item, i) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      li.dataset.index = i;
+      historyList.appendChild(li);
+    });
+  }
+
+  // Восстановление настроек из localStorage
+  function restoreSettings() {
+    if (history.length > 0) {
+      const last = history[0].split(' ');
+      if (last.length >= 4) {
+        amountFrom.value = last[0];
+        currencyFrom.value = last[1];
+        amountTo.value = last[3];
+        currencyTo.value = last[4];
+      }
+    }
+  }
+
+  // Дебаунс
+  function debounce(func, delay) {
     let timer;
     return function(...args) {
       clearTimeout(timer);
-      timer = setTimeout(() => fn.apply(this, args), delay);
-    }
+      timer = setTimeout(() => func.apply(this, args), delay);
+    };
   }
 
-  // Флаги, чтобы избежать циклов пересчётов
-  let fromTyping = false;
-  let toTyping = false;
+  // Обработчики
+  amountFrom.addEventListener('input', debounce(() => convert('forward'), 300));
+  currencyFrom.addEventListener('change', () => convert('forward'));
+  amountTo.addEventListener('input', debounce(() => convert('backward'), 300));
+  currencyTo.addEventListener('change', () => convert('forward'));
 
-  // События
-  amountFrom.addEventListener('input', () => {
-    fromTyping = true;
-    if (toTyping) return;
-    convertDebounced('forward');
-    fromTyping = false;
-  });
-  amountTo.addEventListener('input', () => {
-    toTyping = true;
-    if (fromTyping) return;
-    convertDebounced('backward');
-    toTyping = false;
-  });
-  currencyFrom.addEventListener('change', () => {
-    convert('forward');
-  });
-  currencyTo.addEventListener('change', () => {
-    convert('forward');
-  });
   swapBtn.addEventListener('click', () => {
-    // Поменять валюты местами и суммы (чтобы сохранить логику)
     const tmpCur = currencyFrom.value;
     currencyFrom.value = currencyTo.value;
     currencyTo.value = tmpCur;
@@ -385,13 +327,10 @@
     convert('forward');
   });
 
-  const convertDebounced = debounce(convert, 300);
-
-  // Клик по истории - заполнить форму
   historyList.addEventListener('click', e => {
-    if (e.target.tagName !== 'LI') return;
+    if(e.target.tagName !== 'LI') return;
     const idx = +e.target.dataset.index;
-    if (idx >= 0 && idx < history.length) {
+    if(idx >= 0 && idx < history.length) {
       const parts = history[idx].split(' ');
       if(parts.length >= 4) {
         amountFrom.value = parts[0];
@@ -403,9 +342,10 @@
     }
   });
 
-  // Загрузка курсов и начальный запуск
+  // Инициализация
   async function init() {
     await loadFloatRates();
+    await updateRefRate();
     restoreSettings();
     if(amountFrom.value) {
       convert('forward');
@@ -413,17 +353,19 @@
       convert('backward');
     }
     renderHistory();
-    // Обновление курсов каждые 10 минут (600000 мс)
+
+    // Обновление каждые 10 минут
     setInterval(async () => {
-      if (!updating) {
+      if(!updating) {
         updating = true;
         await loadFloatRates();
+        await updateRefRate();
         updating = false;
-        // Пересчёт после обновления курсов
         if(amountFrom.value) convert('forward');
       }
     }, 600000);
   }
+
   init();
 
 </script>
