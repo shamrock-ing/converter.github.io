@@ -46,55 +46,8 @@
 
   <h2 id="result">Результат: —</h2>
 
-  <script>
-    let usdToKztRate = 0;
-    const keyToUsdRate = 2.4;
-
-    async function fetchRates() {
-      try {
-        const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd/kzt.json');
-        const data = await response.json();
-        usdToKztRate = data.kzt;
-        console.log('Курс USD → KZT:', usdToKztRate);
-      } catch (error) {
-        document.getElementById("result").innerText = "Ошибка загрузки курса USD → KZT.";
-        console.error("Ошибка API:", error);
-      }
-    }
-
-    async function convertCurrency() {
-      const amount = parseFloat(document.getElementById("amount").value);
-      const from = document.getElementById("fromCurrency").value;
-      const to = document.getElementById("toCurrency").value;
-
-      if (isNaN(amount)) {
-        document.getElementById("result").innerText = "Введите корректную сумму.";
-        return;
-      }
-
-      if (!usdToKztRate) {
-        await fetchRates();
-      }
-
-      let usdAmount;
-
-      // Переводим из исходной валюты в USD
-      if (from === "USD") usdAmount = amount;
-      else if (from === "KZT") usdAmount = amount / usdToKztRate;
-      else if (from === "KEY") usdAmount = amount * keyToUsdRate;
-
-      // Переводим из USD в целевую валюту
-      let result;
-      if (to === "USD") result = usdAmount;
-      else if (to === "KZT") result = usdAmount * usdToKztRate;
-      else if (to === "KEY") result = usdAmount / keyToUsdRate;
-
-      document.getElementById("result").innerText = `Результат: ${result.toFixed(2)} ${to}`;
-    }
-
-    // Загружаем курс при загрузке страницы
-    fetchRates();
-  </script>
+  <!-- Подключаем внешний скрипт (обратите внимание: без / в начале пути!) -->
+  <script src="script.js"></script>
 
 </body>
 </html>
