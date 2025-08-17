@@ -1,201 +1,204 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Конвертер валют</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    *, *::before, *::after { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 40px 20px;
-      background: #f7f9fc;
-      font-family: 'Inter', sans-serif;
-      color: #222;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .container {
-      background: #fff;
-      padding: 30px 40px 40px;
-      border-radius: 14px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-      max-width: 400px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h1 {
-      font-weight: 600;
-      font-size: 2.2rem;
-      margin-bottom: 30px;
-      color: #1a1a1a;
-      user-select: none;
-    }
-    label {
-      align-self: flex-start;
-      margin-bottom: 6px;
-      font-weight: 600;
-      color: #444;
-      user-select: none;
-    }
-    input, select {
-      width: 100%;
-      padding: 14px 16px;
-      margin-bottom: 18px;
-      border: 1.8px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 1rem;
-      font-weight: 400;
-      color: #1f2937;
-      background: #fefefe;
-      transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    input::placeholder { color: #94a3b8; }
-    input:focus, select:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 8px #3b82f6aa;
-      background: #fff;
-    }
-    input.error, select.error {
-      border-color: #ef4444;
-      box-shadow: 0 0 8px #ef4444aa;
-      background: #ffe6e6;
-    }
-    .error-message {
-      color: #ef4444;
-      font-size: 0.85rem;
-      margin-top: -14px;
-      margin-bottom: 18px;
-      align-self: flex-start;
-      user-select: none;
-      height: 18px;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    .error-message.visible { opacity: 1; }
-    button {
-      width: 100%;
-      padding: 15px 0;
-      border: none;
-      border-radius: 12px;
-      background-color: #3b82f6;
-      color: #fff;
-      font-weight: 600;
-      font-size: 1.15rem;
-      cursor: pointer;
-      transition: background-color 0.3s ease, transform 0.2s ease;
-      user-select: none;
-    }
-    button:hover { background-color: #2563eb; transform: scale(1.05); }
-    button:active { transform: scale(0.98); }
-    #result {
-      margin-top: 25px;
-      font-size: 1.4rem;
-      font-weight: 600;
-      color: #2563eb;
-      min-height: 1.8em;
-      text-align: center;
-      user-select: none;
-    }
-    #history {
-      margin-top: 28px;
-      width: 100%;
-    }
-    #history h3 {
-      margin-bottom: 12px;
-      font-weight: 600;
-      font-size: 1rem;
-      color: #475569;
-      user-select: none;
-    }
-    #history ul {
-      max-height: 130px;
-      overflow-y: auto;
-      padding-left: 18px;
-      margin: 0;
-      font-size: 0.95rem;
-      color: #64748b;
-    }
-    #history li {
-      margin-bottom: 7px;
-      cursor: pointer;
-      transition: color 0.2s ease;
-    }
-    #history li:hover {
-      color: #3b82f6;
-      text-decoration: underline;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Конвертер валют</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
-    /* ===== Mini REF↔KEY rate input block ===== */
-    .custom-rate {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #fff;
-      padding: 14px 20px;
-      border-radius: 12px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-      font-size: 1rem;
-      color: #1e293b;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      z-index: 1000;
-      user-select: none;
-      flex-wrap: nowrap;
-      transition: height 0.3s ease;
-      max-width: 280px;
-    }
-    .custom-rate.collapsed {
-      height: 40px;
-      overflow: hidden;
-      padding: 8px 20px;
-      max-width: 160px;
-      gap: 8px;
-    }
-    .custom-rate label {
-      font-weight: 600;
-      white-space: nowrap;
-      user-select: none;
-      flex-shrink: 0;
-    }
-    .custom-rate input {
-      width: 80px;
-      padding: 8px 10px;
-      font-size: 1rem;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      user-select: text;
-    }
-    .custom-rate button {
-      padding: 8px 14px;
-      font-size: 0.9rem;
-      border-radius: 8px;
-      background-color: #f87171;
-      border: none;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      user-select: none;
-    }
-    .custom-rate button:hover {
-      background-color: #ef4444;
-    }
-    .custom-rate .toggle-btn {
-      background-color: #3b82f6;
-      margin-left: auto;
-    }
-    .custom-rate .toggle-btn:hover {
-      background-color: #2563eb;
-    }
-  </style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 40px 20px;
+    background: #f7f9fc;
+    font-family: 'Inter', sans-serif;
+    color: #222;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .container {
+    background: #fff;
+    padding: 30px 40px 40px;
+    border-radius: 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    max-width: 400px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  h1 {
+    font-weight: 600;
+    font-size: 2.2rem;
+    margin-bottom: 30px;
+    color: #1a1a1a;
+    user-select: none;
+  }
+
+  label {
+    align-self: flex-start;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #444;
+    user-select: none;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border: 1.8px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 400;
+    color: #1f2937;
+    background: #fefefe;
+    transition:
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  input::placeholder {
+    color: #94a3b8;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 8px #3b82f6aa;
+    background: #fff;
+  }
+
+  input.error, select.error {
+    border-color: #ef4444;
+    box-shadow: 0 0 8px #ef4444aa;
+    background: #ffe6e6;
+  }
+
+  .error-message {
+    color: #ef4444;
+    font-size: 0.85rem;
+    margin-top: -14px;
+    margin-bottom: 18px;
+    align-self: flex-start;
+    user-select: none;
+    height: 18px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .error-message.visible {
+    opacity: 1;
+  }
+
+  button {
+    width: 100%;
+    padding: 15px 0;
+    border: none;
+    border-radius: 12px;
+    background-color: #3b82f6;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.15rem;
+    cursor: pointer;
+    transition:
+      background-color 0.3s ease,
+      transform 0.2s ease;
+    user-select: none;
+  }
+  button:hover {
+    background-color: #2563eb;
+    transform: scale(1.05);
+  }
+  button:active {
+    transform: scale(0.98);
+  }
+
+  #result {
+    margin-top: 25px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #2563eb;
+    min-height: 1.8em;
+    text-align: center;
+    user-select: none;
+  }
+
+  #history {
+    margin-top: 28px;
+    width: 100%;
+  }
+  #history h3 {
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #475569;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #history h3 button {
+    background: #ef4444;
+    color: white;
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+  }
+  #history h3 button:hover {
+    background: #b91c1c;
+  }
+  #history ul {
+    max-height: 130px;
+    overflow-y: auto;
+    padding-left: 18px;
+    margin: 0;
+    font-size: 0.95rem;
+    color: #64748b;
+  }
+  #history li {
+    margin-bottom: 7px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  #history li:hover {
+    color: #3b82f6;
+    text-decoration: underline;
+  }
+
+  #status {
+    margin-top: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    user-select: none;
+    height: 22px;
+    color: #333;
+    text-align: center;
+    transition: color 0.4s ease;
+  }
+  #status.loading {
+    color: #2563eb;
+  }
+  #status.success {
+    color: #22c55e;
+  }
+  #status.error {
+    color: #ef4444;
+  }
+
+</style>
 </head>
 <body>
 
@@ -221,92 +224,64 @@
       <option value="REF">REF</option>
     </select>
 
-    <button id="swapBtn">Поменять местами</button>
+    <button id="convertBtn">Конвертировать</button>
+    <div id="status"></div>
     <div id="result">–</div>
 
     <div id="history">
-      <h3>История конвертаций:</h3>
+      <h3>
+        История конвертаций:
+        <button id="clearHistoryBtn" title="Очистить историю">Очистить</button>
+      </h3>
       <ul id="historyList"></ul>
     </div>
   </div>
 
-  <!-- Мини-блок настройки курса REF:KEY -->
-  <div class="custom-rate" id="customRateBlock">
-    <label for="customRefRate" title="Сколько Ref стоит 1 ключ">REF за 1 ключ:</label>
-    <input type="number" id="customRefRate" step="0.01" min="1" />
-    <button id="resetRateBtn" title="Сбросить курс к умолчанию">Сброс</button>
-    <button id="toggleRateBtn" class="toggle-btn" title="Свернуть/Развернуть блок">▲</button>
-  </div>
-
 <script>
   const keyToUsd = 2.4;
-  const defaultKeyToRef = 52.22;
-  let keyToRef = parseFloat(localStorage.getItem('customKeyToRef')) || defaultKeyToRef;
-
+  const keyToRef = 52.22;
   let usdRates = null;
   const historyKey = 'converter_history';
   const settingsKey = 'converter_settings';
 
+  // Элементы
   const amountInput = document.getElementById('amount');
   const fromSelect = document.getElementById('from');
   const toSelect = document.getElementById('to');
   const resultDiv = document.getElementById('result');
   const historyList = document.getElementById('historyList');
-  const swapBtn = document.getElementById('swapBtn');
-  const customRefRateInput = document.getElementById('customRefRate');
-  const resetRateBtn = document.getElementById('resetRateBtn');
-  const toggleRateBtn = document.getElementById('toggleRateBtn');
-  const customRateBlock = document.getElementById('customRateBlock');
+  const convertBtn = document.getElementById('convertBtn');
+  const statusDiv = document.getElementById('status');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
-  customRefRateInput.value = keyToRef.toFixed(2);
-
-  // Слушатель для изменения курса вручную
-  customRefRateInput.addEventListener('input', () => {
-    const val = parseFloat(customRefRateInput.value);
-    if (val && val > 0) {
-      keyToRef = val;
-      localStorage.setItem('customKeyToRef', keyToRef);
-      convertCurrency();
-    }
-  });
-
-  // Кнопка сброса курса к умолчанию
-  resetRateBtn.addEventListener('click', () => {
-    keyToRef = defaultKeyToRef;
-    customRefRateInput.value = keyToRef.toFixed(2);
-    localStorage.setItem('customKeyToRef', keyToRef);
-    convertCurrency();
-  });
-
-  // Кнопка сворачивания/разворачивания блока
-  toggleRateBtn.addEventListener('click', () => {
-    if (customRateBlock.classList.contains('collapsed')) {
-      customRateBlock.classList.remove('collapsed');
-      toggleRateBtn.textContent = '▲';
-    } else {
-      customRateBlock.classList.add('collapsed');
-      toggleRateBtn.textContent = '▼';
-    }
-  });
-
+  // Восстановление истории из localStorage
   let history = JSON.parse(localStorage.getItem(historyKey)) || [];
+  // Восстановление настроек
   let settings = JSON.parse(localStorage.getItem(settingsKey)) || {};
 
+  // Показываем историю при загрузке
   function renderHistory() {
+    if(history.length === 0) {
+      historyList.innerHTML = '<li style="color:#999; cursor: default;">История пуста</li>';
+      return;
+    }
     historyList.innerHTML = history.map((item, i) =>
       `<li data-index="${i}">${item}</li>`).join('');
   }
   renderHistory();
 
+  // Сохраняем историю
   function saveHistory() {
     localStorage.setItem(historyKey, JSON.stringify(history));
   }
+  // Сохраняем настройки (input/select)
   function saveSettings() {
     settings.amount = amountInput.value;
     settings.from = fromSelect.value;
     settings.to = toSelect.value;
     localStorage.setItem(settingsKey, JSON.stringify(settings));
   }
+  // Восстанавливаем настройки
   function restoreSettings() {
     if (settings.amount) amountInput.value = settings.amount;
     if (settings.from) fromSelect.value = settings.from;
@@ -314,6 +289,7 @@
   }
   restoreSettings();
 
+  // Валидация суммы
   function validateAmount() {
     const val = parseFloat(amountInput.value);
     if (!val || val <= 0) {
@@ -326,6 +302,7 @@
     return true;
   }
 
+  // Показываем сообщение об ошибке
   let errorTimeout;
   function showError(msg) {
     let errorEl = document.querySelector('.error-message');
@@ -349,50 +326,60 @@
 
   async function loadFloatRates() {
     try {
+      statusDiv.textContent = 'Загрузка курсов...';
+      statusDiv.className = 'loading';
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
+      if (!res.ok) throw new Error('Ошибка сети');
       usdRates = await res.json();
-    } catch {
-      resultDiv.textContent = 'Ошибка загрузки курсов.';
+      statusDiv.textContent = 'Курсы загружены';
+      statusDiv.className = 'success';
+    } catch (err) {
+      usdRates = null;
+      statusDiv.textContent = 'Ошибка загрузки курсов';
+      statusDiv.className = 'error';
     }
   }
 
-  function formatTime(date) {
-    return date.toTimeString().split(' ')[0];
-  }
-
   function convertCurrency() {
-    if (!validateAmount() || !usdRates) {
+    if (!validateAmount()) {
       resultDiv.textContent = '–';
+      return;
+    }
+    if (!usdRates) {
+      resultDiv.textContent = 'Курсы не загружены.';
       return;
     }
     const amt = parseFloat(amountInput.value);
     const from = fromSelect.value;
     const to = toSelect.value;
 
+    // Приводим любую валюту к USD
     let inUsd;
     switch(from) {
       case 'USD': inUsd = amt; break;
       case 'KZT': inUsd = amt / usdRates['kzt'].rate; break;
       case 'KEY': inUsd = amt * keyToUsd; break;
       case 'REF': inUsd = amt / keyToRef * keyToUsd; break;
+      default: inUsd = 0;
     }
 
+    // USD → целевая валюта
     let result;
     switch(to) {
       case 'USD': result = inUsd; break;
       case 'KZT': result = inUsd * usdRates['kzt'].rate; break;
       case 'KEY': result = inUsd / keyToUsd; break;
       case 'REF': result = inUsd / keyToUsd * keyToRef; break;
+      default: result = 0;
     }
 
     const resultStr = `Результат: ${result.toFixed(2)} ${to}`;
     resultDiv.textContent = resultStr;
 
-    // Добавляем время операции в историю
-    const nowStr = formatTime(new Date());
-    const historyItem = `${amt} ${from} → ${result.toFixed(2)} ${to} (${nowStr})`;
-
-    // Добавляем в начало, без дублирования
+    // Обновляем историю с временем операции
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+    const historyItem = `${amt} ${from} → ${result.toFixed(2)} ${to} (${timeStr})`;
     if (!history.includes(historyItem)) {
       history.unshift(historyItem);
       if (history.length > 10) history.pop();
@@ -403,32 +390,26 @@
     saveSettings();
   }
 
+  // Автовалидация и сброс результата при вводе
   amountInput.addEventListener('input', () => {
     validateAmount();
-    convertCurrency(); // авто-конвертация
+    resultDiv.textContent = '–';
   });
   fromSelect.addEventListener('change', () => {
+    resultDiv.textContent = '–';
     saveSettings();
-    convertCurrency();
   });
   toSelect.addEventListener('change', () => {
+    resultDiv.textContent = '–';
     saveSettings();
-    convertCurrency();
   });
 
-  // Кнопка "Поменять местами"
-  swapBtn.addEventListener('click', () => {
-    const fromVal = fromSelect.value;
-    fromSelect.value = toSelect.value;
-    toSelect.value = fromVal;
-    saveSettings();
-    convertCurrency();
-  });
+  convertBtn.addEventListener('click', convertCurrency);
 
+  // При клике на историю — подставляем значения
   historyList.addEventListener('click', e => {
     if (e.target.tagName !== 'LI') return;
     const text = e.target.textContent;
-    // Формат: "10 REF → 0.46 KEY (14:12:03)"
     const match = text.match(/^([\d.]+) (\w+) → ([\d.]+) (\w+) \(\d{2}:\d{2}:\d{2}\)$/);
     if (match) {
       amountInput.value = match[1];
@@ -439,7 +420,17 @@
     }
   });
 
+  clearHistoryBtn.addEventListener('click', () => {
+    if (confirm('Очистить всю историю конвертаций?')) {
+      history = [];
+      saveHistory();
+      renderHistory();
+    }
+  });
+
+  // Загрузка курсов при старте
   loadFloatRates();
+
 </script>
 
 </body>
