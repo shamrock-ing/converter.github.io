@@ -2,141 +2,208 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<title>Конвертер валют с историей</title>
+<title>Конвертер валют — Wall Street Style</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
   body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 400px;
-    margin: 3em auto;
-    padding: 1.5em 1.8em;
-    background: #f0f4f8;
-    color: #222;
-    box-shadow: 0 0 8px rgba(0,0,0,0.05);
-    border-radius: 8px;
-  }
-  h1 {
-    text-align: center;
-    font-weight: 700;
-    margin-bottom: 1.8em;
-    font-size: 1.7rem;
-    color: #2c3e50;
-  }
-  label {
-    font-size: 0.9rem;
-    margin-bottom: 0.25em;
-    display: block;
-    color: #555;
-  }
-  input, select {
-    width: 100%;
-    padding: 0.5em 0.7em;
-    margin-bottom: 1em;
-    border: 1px solid #ccd6dd;
-    border-radius: 5px;
-    font-size: 1rem;
-    background: white;
+    margin: 0;
+    background: #000;
+    color: #0f0;
+    font-family: 'Share Tech Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+    min-height: 100vh;
     box-sizing: border-box;
-    transition: border-color 0.25s ease;
   }
+
+  h1 {
+    color: #0f0;
+    font-weight: 400;
+    margin-bottom: 2rem;
+    letter-spacing: 0.15em;
+    font-size: 2rem;
+    text-transform: uppercase;
+    text-shadow:
+      0 0 5px #0f0,
+      0 0 10px #0f0,
+      0 0 20px #0f0;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
+    color: #0f0;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  input, select {
+    width: 260px;
+    background: #111;
+    border: none;
+    border-bottom: 2px solid #0f0;
+    color: #0f0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.1rem;
+    padding: 0.4rem 0.5rem;
+    margin-bottom: 1.5rem;
+    box-sizing: border-box;
+    text-align: center;
+    letter-spacing: 0.05em;
+    transition: border-color 0.3s ease;
+  }
+
+  input::placeholder {
+    color: #066006;
+  }
+
   input:focus, select:focus {
     outline: none;
-    border-color: #3498db;
-    box-shadow: 0 0 6px rgba(52,152,219,0.4);
+    border-color: #0f0;
+    box-shadow:
+      0 0 10px #0f0,
+      0 0 20px #0f0;
+    background: #040;
   }
+
+  select {
+    cursor: pointer;
+  }
+
   button {
-    width: 100%;
-    padding: 0.55em 0;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: white;
-    background: #3498db;
-    border: none;
-    border-radius: 5px;
+    width: 260px;
+    padding: 0.6rem 0;
+    background: #000;
+    border: 2px solid #0f0;
+    color: #0f0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
     cursor: pointer;
     user-select: none;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
+
   button:hover {
-    background: #2980b9;
+    background: #0f0;
+    color: #000;
+    box-shadow:
+      0 0 10px #0f0,
+      0 0 30px #0f0;
   }
+
   #result {
-    margin-top: 1.6em;
+    margin-top: 2rem;
+    font-size: 1.8rem;
+    letter-spacing: 0.15em;
+    min-height: 2.4em;
     text-align: center;
-    font-weight: 700;
-    font-size: 1.3rem;
-    color: #34495e;
-    min-height: 1.6em;
+    text-shadow:
+      0 0 7px #0f0,
+      0 0 20px #0f0;
   }
+
+  /* Зелёный цвет для роста, красный для падения */
+  .positive {
+    color: #0f0;
+    text-shadow:
+      0 0 10px #0f0,
+      0 0 30px #0f0;
+  }
+
+  .negative {
+    color: #f00;
+    text-shadow:
+      0 0 10px #f00,
+      0 0 30px #f00;
+  }
+
+  /* История */
   #history {
-    margin-top: 2em;
-    border-top: 1px solid #d0d7de;
-    padding-top: 1em;
+    margin-top: 3rem;
+    width: 260px;
+    max-height: 140px;
+    overflow-y: auto;
+    background: #111;
+    border: 1px solid #0f0;
+    border-radius: 6px;
+    padding: 0.5rem;
     font-size: 0.9rem;
-    color: #555;
+    color: #0f0;
+    box-shadow:
+      inset 0 0 10px #0f0;
+    user-select: none;
   }
   #history h2 {
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 0.5em;
+    margin: 0 0 0.6rem 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
   #history ul {
     list-style: none;
     padding-left: 0;
-    max-height: 140px;
-    overflow-y: auto;
+    margin: 0;
   }
   #history li {
-    background: white;
-    margin-bottom: 0.4em;
-    padding: 0.45em 0.7em;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 0.4rem;
+    padding: 0.3rem 0.4rem;
+    border-bottom: 1px solid #0f020f;
+    transition: background-color 0.2s ease;
+  }
+  #history li:hover {
+    background-color: #00440066;
   }
 </style>
 </head>
 <body>
 
-<h1>Конвертер валют</h1>
+<h1>Currency Converter</h1>
 
-<label for="amount">Сумма</label>
-<input type="number" id="amount" placeholder="Введите сумму" />
+<label for="amount">Amount</label>
+<input type="number" id="amount" placeholder="Enter amount" min="0" step="any" />
 
-<label for="from">Из валюты</label>
+<label for="from">From</label>
 <select id="from">
   <option value="USD">USD</option>
   <option value="KZT">KZT</option>
   <option value="KEY">KEY</option>
 </select>
 
-<label for="to">В валюту</label>
+<label for="to">To</label>
 <select id="to">
   <option value="USD">USD</option>
   <option value="KZT">KZT</option>
   <option value="KEY">KEY</option>
 </select>
 
-<button id="convertBtn">Конвертировать</button>
+<button id="convertBtn">Convert</button>
 
 <div id="result">—</div>
 
 <div id="history">
-  <h2>История конвертаций</h2>
+  <h2>History</h2>
   <ul id="historyList"></ul>
 </div>
 
 <script>
   const keyToUsd = 2.4; // 1 KEY = 2.4 USD
   let usdRates = null;
-  const historyLimit = 5;
+  const historyLimit = 7;
   const history = [];
 
   async function loadUsdRates() {
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
-      if (!res.ok) throw new Error('Ошибка сети');
+      if (!res.ok) throw new Error('Network error');
       usdRates = await res.json();
     } catch (e) {
-      document.getElementById('result').textContent = 'Ошибка загрузки курсов USD';
+      document.getElementById('result').textContent = 'Error loading USD rates';
       console.error(e);
     }
   }
@@ -152,13 +219,13 @@
 
   function convert() {
     if (!usdRates) {
-      document.getElementById('result').textContent = 'Курсы не загружены';
+      document.getElementById('result').textContent = 'Rates not loaded';
       return;
     }
 
     const amount = parseFloat(document.getElementById('amount').value);
     if (isNaN(amount) || amount <= 0) {
-      document.getElementById('result').textContent = 'Введите корректную сумму';
+      document.getElementById('result').textContent = 'Enter a valid amount';
       return;
     }
 
@@ -171,36 +238,47 @@
       amountInUsd = amount;
     } else if (from === 'KZT') {
       if (!usdRates['kzt']) {
-        document.getElementById('result').textContent = 'Нет курса для KZT';
+        document.getElementById('result').textContent = 'No KZT rate';
         return;
       }
       amountInUsd = amount / usdRates['kzt'].rate;
     } else if (from === 'KEY') {
       amountInUsd = amount * keyToUsd;
     } else {
-      document.getElementById('result').textContent = 'Неизвестная валюта';
+      document.getElementById('result').textContent = 'Unknown currency';
       return;
     }
 
-    let result;
+    let resultValue;
 
     if (to === 'USD') {
-      result = amountInUsd;
+      resultValue = amountInUsd;
     } else if (to === 'KZT') {
       if (!usdRates['kzt']) {
-        document.getElementById('result').textContent = 'Нет курса для KZT';
+        document.getElementById('result').textContent = 'No KZT rate';
         return;
       }
-      result = amountInUsd * usdRates['kzt'].rate;
+      resultValue = amountInUsd * usdRates['kzt'].rate;
     } else if (to === 'KEY') {
-      result = amountInUsd / keyToUsd;
+      resultValue = amountInUsd / keyToUsd;
     } else {
-      document.getElementById('result').textContent = 'Неизвестная валюта';
+      document.getElementById('result').textContent = 'Unknown currency';
       return;
     }
 
-    document.getElementById('result').textContent = `Результат: ${result.toFixed(2)} ${to}`;
-    updateHistory(from, to, amount, result);
+    // Определим цвет результата: если рост — зелёный, если падение — красный
+    // Для простоты считаем, что если результат > исходной суммы — рост (positive), иначе падение
+    const resultDiv = document.getElementById('result');
+    if (resultValue > amount) {
+      resultDiv.className = 'positive';
+    } else if (resultValue < amount) {
+      resultDiv.className = 'negative';
+    } else {
+      resultDiv.className = '';
+    }
+
+    resultDiv.textContent = `Result: ${resultValue.toFixed(2)} ${to}`;
+    updateHistory(from, to, amount, resultValue);
   }
 
   document.getElementById('convertBtn').addEventListener('click', convert);
