@@ -2,98 +2,96 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>Конвертер валют + График USD–KZT</title>
+  <title>Конвертер валют</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f5f5f5;
       color: #333;
-      padding: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-items: flex-start;
+      padding: 40px;
+      text-align: center;
     }
-    .converter, .chart-container {
-      background: white;
-      padding: 20px;
-      margin: 10px;
+
+    .container {
+      background: #fff;
+      padding: 30px;
+      max-width: 400px;
+      margin: 0 auto;
       border-radius: 8px;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
     }
-    .converter {
-      flex: 1 1 300px;
-      max-width: 350px;
-    }
-    .chart-container {
-      flex: 1 1 400px;
-      max-width: 500px;
-    }
-    h1, h2 {
-      text-align: center;
-    }
+
     input, select, button {
+      display: block;
       width: 100%;
       padding: 10px;
-      margin: 10px 0;
+      margin: 12px 0;
       font-size: 1rem;
     }
+
     button {
-      cursor: pointer;
       background-color: #007BFF;
-      border: none;
       color: white;
+      border: none;
+      cursor: pointer;
     }
+
     button:hover {
       background-color: #0056b3;
     }
+
     #result {
       margin-top: 20px;
+      font-weight: bold;
       font-size: 1.2rem;
-      text-align: center;
     }
+
     #history {
-      margin-top: 20px;
-      font-size: 0.9rem;
+      margin-top: 30px;
+      text-align: left;
     }
+
+    #history h3 {
+      margin-bottom: 10px;
+    }
+
     #history ul {
+      list-style: disc;
       padding-left: 20px;
     }
-    canvas {
-      display: block;
-      width: 100%;
-      height: 300px;
-    }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-  <div class="converter">
+  <div class="container">
     <h1>Конвертер валют</h1>
-    <input type="number" id="amount" placeholder="Сумма" />
+
+    <input type="number" id="amount" placeholder="Введите сумму" />
+
     <select id="from">
       <option value="USD">USD</option>
       <option value="KZT">KZT</option>
       <option value="KEY">KEY</option>
     </select>
+
     <select id="to">
       <option value="USD">USD</option>
       <option value="KZT">KZT</option>
       <option value="KEY">KEY</option>
     </select>
-    <button id="convertBtn">Конвертировать</button>
-    <div id="result">—</div>
-    <div id="history"><h2>История</h2><ul id="historyList"></ul></div>
-  </div>
 
-  <div class="chart-container">
-    <h2>USD → KZT (за 7 дней)</h2>
-    <canvas id="rateChart"></canvas>
+    <button id="convertBtn">Конвертировать</button>
+
+    <div id="result">—</div>
+
+    <div id="history">
+      <h3>История:</h3>
+      <ul id="historyList"></ul>
+    </div>
   </div>
 
   <script>
-    const keyToUsd = 2.4; // 1 KEY = 2.4 USD
+    const keyToUsd = 2.4;
     let usdRates = null;
     const history = [];
 
@@ -101,89 +99,63 @@
       try {
         const res = await fetch('https://www.floatrates.com/daily/usd.json');
         usdRates = await res.json();
-      } catch (err) {
-        console.error('Ошибка загрузки курсов', err);
+      } catch (error) {
+        document.getElementById('result').textContent = 'Ошибка загрузки курсов.';
+        console.error('Ошибка загрузки курса:', error);
       }
     }
 
-    function updateHistory(from, to, amount, result) {
-      const text = `${amount} ${from} → ${result.toFixed(2)} ${to}`;
-      history.unshift(text);
-      if (history.length > 5) history.pop();
-      document.getElementById('historyList').innerHTML = history.map(item => `<li>${item}</li>`).join('');
-    }
-
     function convert() {
-      if (!usdRates) return;
+      if (!usdRates) {
+        document.getElementById('result').textContent = 'Курсы ещё не загружены.';
+        return;
+      }
+
       const amount = parseFloat(document.getElementById('amount').value);
-      if (!amount) return;
       const from = document.getElementById('from').value;
       const to = document.getElementById('to').value;
-      let inUsd;
 
-      if (from === 'USD') inUsd = amount;
-      else if (from === 'KZT') inUsd = amount / usdRates['kzt'].rate;
-      else inUsd = amount * keyToUsd;
+      if (isNaN(amount) || amount <= 0) {
+        document.getElementById('result').textContent = 'Введите корректную сумму.';
+        return;
+      }
 
-      let result;
-      if (to === 'USD') result = inUsd;
-      else if (to === 'KZT') result = inUsd * usdRates['kzt'].rate;
-      else result = inUsd / keyToUsd;
+      let amountInUsd;
 
-      document.getElementById('result').textContent = `Результат: ${result.toFixed(2)} ${to}`;
-      updateHistory(from, to, amount, result);
+      if (from === 'USD') {
+        amountInUsd = amount;
+      } else if (from === 'KZT') {
+        if (!usdRates['kzt']) return;
+        amountInUsd = amount / usdRates['kzt'].rate;
+      } else if (from === 'KEY') {
+        amountInUsd = amount * keyToUsd;
+      }
+
+      let resultAmount;
+
+      if (to === 'USD') {
+        resultAmount = amountInUsd;
+      } else if (to === 'KZT') {
+        resultAmount = amountInUsd * usdRates['kzt'].rate;
+      } else if (to === 'KEY') {
+        resultAmount = amountInUsd / keyToUsd;
+      }
+
+      const resultText = `Результат: ${resultAmount.toFixed(2)} ${to}`;
+      document.getElementById('result').textContent = resultText;
+
+      // История
+      const entry = `${amount} ${from} → ${resultAmount.toFixed(2)} ${to}`;
+      history.unshift(entry);
+      if (history.length > 5) history.pop();
+
+      document.getElementById('historyList').innerHTML = history.map(item => `<li>${item}</li>`).join('');
     }
 
     document.getElementById('convertBtn').addEventListener('click', convert);
 
-    loadRates();
-
-    // --- График курса USD → KZT за последние 7 дней ---
-    const ctx = document.getElementById('rateChart').getContext('2d');
-    let chart;
-
-    async function loadChartData() {
-      const today = new Date().toISOString().split('T')[0];
-      const start = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString().split('T')[0];
-      const url = `https://api.exchangerate.host/timeseries?start_date=${start}&end_date=${today}&base=USD&symbols=KZT`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const labels = Object.keys(data.rates);
-      const rates = labels.map(d => data.rates[d].KZT);
-
-      if (chart) {
-        chart.data.labels = labels;
-        chart.data.datasets[0].data = rates;
-        chart.update();
-      } else {
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: 'USD → KZT',
-              data: rates,
-              borderColor: 'blue',
-              backgroundColor: 'rgba(0,100,255,0.2)',
-              tension: 0.3
-            }]
-          },
-          options: {
-            scales: {
-              x: { display: true },
-              y: { beginAtZero: false }
-            }
-          }
-        });
-      }
-    }
-
-    loadChartData();
-    setInterval(() => {
-      loadRates();
-      loadChartData();
-    }, 10 * 60 * 1000); // обновлять каждые 10 минут
-
+    loadRates(); // Загрузим курсы при запуске
   </script>
+
 </body>
 </html>
