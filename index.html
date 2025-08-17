@@ -3,344 +3,338 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Конвертер валют с графиком KEY → REF</title>
+<title>Конвертер валют с историей и графиком</title>
 <style>
   body {
-    font-family: Arial, sans-serif;
-    background: #f5f7fa;
-    color: #333;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f7f9fc;
+    color: #222;
+    margin: 20px;
     max-width: 900px;
-    margin: 30px auto;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 0.5em;
+  }
+  .converter {
     display: flex;
     gap: 20px;
-    user-select: none;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2em;
   }
-  #converter {
-    flex: 1;
+  .box {
     background: white;
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-    display: flex;
-    flex-direction: column;
-  }
-  #chartContainer {
-    width: 320px;
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  h1, h2 {
-    margin: 0 0 20px 0;
-    font-weight: 700;
-    color: #0077cc;
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.1);
+    min-width: 250px;
+    flex-grow: 1;
   }
   label {
-    margin-top: 15px;
+    display: block;
+    margin-bottom: 0.25em;
     font-weight: 600;
   }
-  input, select {
+  input[type=number] {
     width: 100%;
-    padding: 10px 14px;
-    margin-top: 7px;
-    font-size: 1.1rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 1.1em;
+    border: 1px solid #ddd;
+    border-radius: 5px;
     box-sizing: border-box;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.3s;
   }
-  input:focus, select:focus {
-    border-color: #0077cc;
+  input[type=number]:focus {
+    border-color: #3f51b5;
     outline: none;
   }
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    margin-top: 5px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
   button {
-    margin-top: 25px;
-    padding: 12px;
-    font-size: 1.15rem;
-    border-radius: 10px;
-    border: none;
-    background: #0077cc;
+    margin-top: 12px;
+    padding: 8px 14px;
+    background: #3f51b5;
     color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: 700;
     cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
+    user-select: none;
+    transition: background 0.3s;
   }
   button:hover {
-    background: #005fa3;
+    background: #2c3b9b;
   }
   #history {
-    margin-top: 25px;
-    max-height: 130px;
+    max-height: 240px;
     overflow-y: auto;
-    border-top: 1px solid #eee;
-    padding-top: 15px;
   }
   #history li {
     cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
+    padding: 6px 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+    color: #555;
   }
   #history li:hover {
-    background: #d0e7ff;
+    background-color: #e6e9fc;
   }
-  .error {
-    border-color: #cc0000 !important;
+  #history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  #notification {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #3f51b5;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  #notification.show {
+    opacity: 1;
+    pointer-events: auto;
   }
   canvas {
-    margin-top: 15px;
-    border-radius: 10px;
-    background: #f0f5ff;
-    border: 1px solid #d0d7e5;
-  }
-  small {
-    color: #666;
-    margin-top: 8px;
-    font-size: 0.85rem;
+    max-width: 100%;
   }
 </style>
 </head>
 <body>
+<h1>Конвертер валют KEY ↔ REF</h1>
+<div class="converter">
+  <div class="box">
+    <label for="amountFrom">Сумма</label>
+    <input type="number" id="amountFrom" min="0" step="0.0001" placeholder="Введите сумму" />
+    <label for="currencyFrom">Валюта</label>
+    <select id="currencyFrom">
+      <option value="key">KEY</option>
+      <option value="ref">REF</option>
+      <option value="usd">USD</option>
+      <option value="kzt">KZT</option>
+    </select>
+  </div>
+  <div class="box">
+    <label for="amountTo">Результат</label>
+    <input type="number" id="amountTo" min="0" step="0.0001" placeholder="Рассчитано" />
+    <label for="currencyTo">Валюта</label>
+    <select id="currencyTo">
+      <option value="ref">REF</option>
+      <option value="key">KEY</option>
+      <option value="usd">USD</option>
+      <option value="kzt">KZT</option>
+    </select>
+  </div>
+</div>
+<button id="swapBtn">Поменять местами</button>
 
-<div id="converter">
-  <h1>Конвертер валют</h1>
-
-  <label for="amountFrom">Сумма (из):</label>
-  <input type="number" id="amountFrom" min="0" step="any" placeholder="Введите сумму" />
-
-  <label for="currencyFrom">Валюта (из):</label>
-  <select id="currencyFrom">
-    <option value="usd">USD</option>
-    <option value="kzt">KZT</option>
-    <option value="key">KEY</option>
-    <option value="ref">REF</option>
-  </select>
-
-  <label for="amountTo">Сумма (в):</label>
-  <input type="number" id="amountTo" min="0" step="any" placeholder="Результат" />
-
-  <label for="currencyTo">Валюта (в):</label>
-  <select id="currencyTo">
-    <option value="usd">USD</option>
-    <option value="kzt">KZT</option>
-    <option value="key">KEY</option>
-    <option value="ref">REF</option>
-  </select>
-
-  <button id="swapBtn">Поменять местами</button>
-
-  <ul id="history" title="История конвертаций"></ul>
+<div id="history-section" style="margin-top:30px;">
+  <div id="history-header">
+    <h2>История конвертаций</h2>
+    <button id="clearHistoryBtn" style="background:#d32f2f;">Очистить историю</button>
+  </div>
+  <ul id="history"></ul>
 </div>
 
-<div id="chartContainer">
-  <h2>График курса KEY → REF</h2>
-  <canvas id="keyRefChart" width="300" height="180"></canvas>
-  <small>Обновляется каждые 5 минут</small>
-</div>
+<canvas id="chart" height="180"></canvas>
 
+<div id="notification"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (() => {
-  // API ключ backpack.tf (public)
-  const backpackApiKey = '68a1d6d01326fe092a02c00c';
-
-  // Элементы
   const amountFrom = document.getElementById('amountFrom');
   const currencyFrom = document.getElementById('currencyFrom');
   const amountTo = document.getElementById('amountTo');
   const currencyTo = document.getElementById('currencyTo');
   const swapBtn = document.getElementById('swapBtn');
   const historyList = document.getElementById('history');
-  const chartCanvas = document.getElementById('keyRefChart');
-  const ctx = chartCanvas.getContext('2d');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  const notification = document.getElementById('notification');
+  const chartCtx = document.getElementById('chart').getContext('2d');
 
-  // Константы и переменные
-  let rates = { usd: 1, kzt: 1 }; // курсы KZT и USD (floatrates)
-  const refToUsd = 0.20; // 1 REF = 0.20 USD, фиксировано
-  let keyPriceMetal = 52.22; // в рефах, обновляется backpack.tf
-  let refPriceMetal = 1;     // 1 реф
+  // Курсы валют (пример начальных)
+  let rates = {
+    usd: 1, 
+    kzt: 470, 
+    key: 0, // в ref
+    ref: 1,
+  };
 
-  // Для графика
-  const maxPoints = 12; // последние 1 час с интервалом 5 минут
-  let chartData = JSON.parse(localStorage.getItem('chartData')) || [];
-
-  // История конвертаций
+  // Хранение истории
   let history = JSON.parse(localStorage.getItem('history')) || [];
 
-  // --- Загрузка курсов KZT с floatrates ---
+  // Данные графика (KEY → REF)
+  let chartData = {
+    labels: [],
+    datasets: [{
+      label: 'Курс KEY → REF',
+      data: [],
+      borderColor: '#3f51b5',
+      backgroundColor: 'rgba(63,81,181,0.2)',
+      fill: true,
+      tension: 0.2,
+      pointRadius: 3,
+      pointHoverRadius: 6,
+    }]
+  };
+
+  // Создаем график
+  const chart = new Chart(chartCtx, {
+    type: 'line',
+    data: chartData,
+    options: {
+      responsive: true,
+      interaction: {
+        mode: 'nearest',
+        intersect: false
+      },
+      plugins: {
+        tooltip: {
+          enabled: true,
+          mode: 'nearest',
+          intersect: false,
+          callbacks: {
+            label: ctx => ctx.parsed.y.toFixed(4)
+          }
+        },
+        zoom: {
+          zoom: {
+            wheel: {
+              enabled: true
+            },
+            pinch: {
+              enabled: true
+            },
+            mode: 'x',
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'minute',
+            tooltipFormat: 'HH:mm:ss',
+          },
+          title: {
+            display: true,
+            text: 'Время'
+          }
+        },
+        y: {
+          beginAtZero: false,
+          title: {
+            display: true,
+            text: 'Курс'
+          }
+        }
+      }
+    },
+    plugins: [Chart.Zoom], // не забудь подключить Chart.Zoom плагин отдельно
+  });
+
+  // Показывать уведомления
+  function showNotification(text) {
+    notification.textContent = text;
+    notification.classList.add('show');
+    setTimeout(() => {
+      notification.classList.remove('show');
+    }, 4000);
+  }
+
+  // Дебаунс (задержка вызова функции)
+  function debounce(fn, delay) {
+    let timer;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  // Загрузка курсов floatrates (usd, kzt)
   async function loadFloatRates() {
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
+      if (!res.ok) throw new Error('Ошибка сети floatrates');
       const data = await res.json();
-      if(data.kzt && data.kzt.rate) {
-        rates.kzt = data.kzt.rate;
-      }
+      if(!data.kzt || !data.kzt.rate) throw new Error('Нет данных KZT floatrates');
+
       rates.usd = 1;
-      // console.log('Floatrates загружены', rates);
+      rates.kzt = data.kzt.rate;
     } catch(e) {
-      console.error('Ошибка загрузки floatrates', e);
+      showNotification(`Ошибка загрузки курсов floatrates: ${e.message}`);
+      console.error(e);
     }
   }
 
-  // --- Загрузка цен key/ref с backpack.tf ---
+  // Загрузка цен с backpack.tf (key и ref)
   async function loadBackpackTfPrices() {
     try {
-      const url = `https://backpack.tf/api/IGetMarketPrices/v1?key=${backpackApiKey}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      // Пример API ключа и запроса (замени на настоящий URL с API)
+      const apiKey = '68a1d6d01326fe092a02c00c';
+      const res = await fetch(`https://backpack.tf/api/IGetMarketPrices/v1/?key=${apiKey}`);
+      if (!res.ok) throw new Error('Ошибка сети backpack.tf');
+      const json = await res.json();
+      // Предполагаемая структура (пример, нужно проверить документацию!)
+      // Здесь для демонстрации: 
+      // key в refined metal (ref), ref = 1
+      const keyPriceRef = json.response?.items?.['Mann Co. Supply Crate Key']?.prices?.['Refined Metal']?.value || 2.4;
+      rates.key = keyPriceRef;
 
-      if (!data.response || !data.response.items) {
-        console.warn('backpack.tf API вернул неправильный ответ', data);
-        return;
-      }
-
-      const items = data.response.items;
-
-      const keyItem = items['Mann Co. Supply Crate Key'];
-      const refItem = items['Refined Metal'];
-
-      if (!keyItem || !refItem) {
-        console.warn('Не найдены цены key или ref в backpack.tf');
-        return;
-      }
-
-      keyPriceMetal = keyItem.value.value; // в Refined Metal
-      refPriceMetal = refItem.value.value; // обычно 1
-
-      // Добавляем точку в график
-      addChartPoint(keyPriceMetal / refPriceMetal);
-      // console.log(`Backpack.tf: KEY=${keyPriceMetal} ref, REF=${refPriceMetal} ref`);
-
+      // REF фиксированно 1 (если нужно менять, делай)
+      rates.ref = 1;
     } catch(e) {
-      console.error('Ошибка при запросе backpack.tf API', e);
+      showNotification(`Ошибка загрузки backpack.tf: ${e.message}`);
+      console.error(e);
     }
   }
 
-  // Добавление точки в график и сохранение
-  function addChartPoint(value) {
-    const now = Date.now();
-    chartData.push({ time: now, value });
-    if (chartData.length > maxPoints) {
-      chartData.shift();
-    }
-    localStorage.setItem('chartData', JSON.stringify(chartData));
-    drawChart();
-  }
+  // Конвертация валют
+  function convertCurrency(amount, fromCur, toCur) {
+    if (fromCur === toCur) return amount;
+    let amountInRef;
 
-  // Рисуем график KEY → REF
-  function drawChart() {
-    ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-    if (chartData.length === 0) {
-      ctx.fillStyle = '#666';
-      ctx.font = '14px Arial';
-      ctx.fillText('Нет данных для графика', 50, 90);
-      return;
-    }
-
-    const padding = 40;
-    const w = chartCanvas.width - padding * 2;
-    const h = chartCanvas.height - padding * 2;
-
-    // Найдем мин/макс
-    let values = chartData.map(p => p.value);
-    const minVal = Math.min(...values);
-    const maxVal = Math.max(...values);
-
-    // Ось Y
-    ctx.strokeStyle = '#ccc';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padding, padding);
-    ctx.lineTo(padding, padding + h);
-    ctx.lineTo(padding + w, padding + h);
-    ctx.stroke();
-
-    // Горизонтальные линии и подписи
-    ctx.fillStyle = '#888';
-    ctx.font = '11px Arial';
-    ctx.textAlign = 'right';
-
-    for(let i = 0; i <= 4; i++) {
-      let y = padding + h - (h / 4) * i;
-      let val = minVal + (maxVal - minVal) * i / 4;
-      ctx.beginPath();
-      ctx.moveTo(padding - 5, y);
-      ctx.lineTo(padding + w, y);
-      ctx.strokeStyle = '#eee';
-      ctx.stroke();
-      ctx.fillText(val.toFixed(3), padding - 10, y + 4);
-    }
-
-    // Ось X (время)
-    ctx.textAlign = 'center';
-    const timeRange = chartData[chartData.length - 1].time - chartData[0].time || 1;
-    for(let i = 0; i < chartData.length; i++) {
-      const x = padding + (w / (chartData.length - 1)) * i;
-      const date = new Date(chartData[i].time);
-      const label = date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2);
-      ctx.fillText(label, x, padding + h + 15);
-    }
-
-    // Линия графика
-    ctx.strokeStyle = '#0077cc';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    chartData.forEach((point, i) => {
-      const x = padding + (w / (chartData.length - 1)) * i;
-      const y = padding + h - ((point.value - minVal) / (maxVal - minVal)) * h;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    // Точки на линии
-    ctx.fillStyle = '#005fa3';
-    chartData.forEach((point, i) => {
-      const x = padding + (w / (chartData.length - 1)) * i;
-      const y = padding + h - ((point.value - minVal) / (maxVal - minVal)) * h;
-      ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
-
-  // Конвертация
-  function convertCurrency(amount, from, to) {
-    if (isNaN(amount) || amount <= 0) return 0;
-
-    let amountInUsd;
-
-    switch(from) {
-      case 'usd': amountInUsd = amount; break;
-      case 'kzt': amountInUsd = amount / rates.kzt; break;
-      case 'key': amountInUsd = amount * keyPriceMetal * refToUsd; break;
-      case 'ref': amountInUsd = amount * refToUsd; break;
-      default: amountInUsd = amount;
-    }
+    if(fromCur === 'usd') amountInRef = amount * rates.kzt / rates.kzt; // usd в ref пока нет прямого курса, можно улучшить
+    else if(fromCur === 'kzt') amountInRef = amount / rates.kzt;
+    else if(fromCur === 'key') amountInRef = amount * rates.key;
+    else if(fromCur === 'ref') amountInRef = amount;
 
     let result;
-
-    switch(to) {
-      case 'usd': result = amountInUsd; break;
-      case 'kzt': result = amountInUsd * rates.kzt; break;
-      case 'key': result = amountInUsd / (keyPriceMetal * refToUsd); break;
-      case 'ref': result = amountInUsd / refToUsd; break;
-      default: result = amountInUsd;
+    if(toCur === 'usd') {
+      result = amountInRef; // Для примера упрощено
+    } else if(toCur === 'kzt') {
+      result = amountInRef * rates.kzt;
+    } else if(toCur === 'key') {
+      result = amountInRef / rates.key;
+    } else if(toCur === 'ref') {
+      result = amountInRef;
+    } else {
+      result = amount;
     }
-
     return result;
   }
 
-  // Конвертация по вводу
-  function convert(direction = 'forward') {
+  // Основная функция конвертации с проверками и обновлением истории
+  function convert(direction) {
     if(direction === 'forward') {
-      const fromVal = parseFloat(amountFrom.value);
+      let fromVal = parseFloat(amountFrom.value);
       if (isNaN(fromVal) || fromVal <= 0) {
         amountTo.value = '';
         return;
@@ -350,7 +344,7 @@
 
       saveHistory(fromVal, currencyFrom.value, toVal, currencyTo.value);
     } else {
-      const toVal = parseFloat(amountTo.value);
+      let toVal = parseFloat(amountTo.value);
       if (isNaN(toVal) || toVal <= 0) {
         amountFrom.value = '';
         return;
@@ -362,7 +356,7 @@
     }
   }
 
-  // Сохраняем в историю
+  // История и сохранение
   function saveHistory(fromAmount, fromCur, toAmount, toCur) {
     const entry = {
       fromAmount: fromAmount.toFixed(4),
@@ -377,10 +371,9 @@
     renderHistory();
   }
 
-  // Отрисовка истории
   function renderHistory() {
     historyList.innerHTML = '';
-    history.forEach((item, idx) => {
+    history.forEach(item => {
       const li = document.createElement('li');
       li.textContent = `${item.fromAmount} ${item.fromCur.toUpperCase()} → ${item.toAmount} ${item.toCur.toUpperCase()} (${new Date(item.time).toLocaleTimeString()})`;
       li.title = 'Клик для использования';
@@ -394,7 +387,16 @@
     });
   }
 
-  // Переключение валют местами
+  clearHistoryBtn.onclick = () => {
+    if(confirm('Очистить всю историю?')) {
+      history = [];
+      localStorage.removeItem('history');
+      renderHistory();
+      showNotification('История очищена');
+    }
+  };
+
+  // Swap currencies and values
   swapBtn.onclick = () => {
     const tempCur = currencyFrom.value;
     currencyFrom.value = currencyTo.value;
@@ -405,29 +407,58 @@
     amountTo.value = tempAmt;
   };
 
-  // Обработчики
-  amountFrom.addEventListener('input', () => convert('forward'));
+  // Форматирование ввода и конвертация с задержкой
+  amountFrom.addEventListener('input', debounce(() => {
+    convert('forward');
+  }, 300));
+
+  amountTo.addEventListener('input', debounce(() => {
+    convert('backward');
+  }, 300));
+
   currencyFrom.addEventListener('change', () => convert('forward'));
-  amountTo.addEventListener('input', () => convert('backward'));
   currencyTo.addEventListener('change', () => convert('forward'));
 
-  // Обновление курсов и графика каждые 5 минут
+  // Обновление данных и графика каждые 5 минут
   async function updateAll() {
-    await loadFloatRates();
-    await loadBackpackTfPrices();
-    convert('forward');
+    try {
+      await loadFloatRates();
+      await loadBackpackTfPrices();
+      convert('forward');
+      updateChart();
+      showNotification('Курсы успешно обновлены');
+    } catch(e) {
+      showNotification('Ошибка обновления курсов');
+      console.error(e);
+    }
+  }
+
+  // Обновление графика
+  function updateChart() {
+    const now = new Date();
+    const lastPrice = rates.key / rates.ref; // key to ref
+    chartData.labels.push(now);
+    chartData.datasets[0].data.push(lastPrice);
+
+    // Ограничим максимум точек
+    if(chartData.labels.length > 50) {
+      chartData.labels.shift();
+      chartData.datasets[0].data.shift();
+    }
+    chart.update();
   }
 
   // Инициализация
   (async () => {
     renderHistory();
     await updateAll();
-    drawChart();
+
+    // Интервал обновления
     setInterval(async () => {
-      await loadBackpackTfPrices();
-      convert('forward');
+      await updateAll();
     }, 5 * 60 * 1000); // 5 минут
   })();
+
 })();
 </script>
 
