@@ -3,60 +3,90 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Конвертер валют с backpack.tf API</title>
+<title>Конвертер валют с графиком KEY → REF</title>
 <style>
   body {
     font-family: Arial, sans-serif;
     background: #f5f7fa;
     color: #333;
-    max-width: 480px;
+    max-width: 900px;
     margin: 30px auto;
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 20px;
+    user-select: none;
   }
-  h1 {
-    text-align: center;
+  #converter {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+  }
+  #chartContainer {
+    width: 320px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1, h2 {
+    margin: 0 0 20px 0;
+    font-weight: 700;
+    color: #0077cc;
   }
   label {
-    display: block;
     margin-top: 15px;
+    font-weight: 600;
   }
   input, select {
     width: 100%;
-    padding: 8px 12px;
-    margin-top: 5px;
-    font-size: 1rem;
+    padding: 10px 14px;
+    margin-top: 7px;
+    font-size: 1.1rem;
     border: 1px solid #ccc;
-    border-radius: 6px;
+    border-radius: 8px;
     box-sizing: border-box;
+    transition: border-color 0.3s ease;
+  }
+  input:focus, select:focus {
+    border-color: #0077cc;
+    outline: none;
   }
   button {
-    margin-top: 20px;
-    width: 100%;
-    background: #0077cc;
-    border: none;
-    color: white;
-    font-size: 1.1rem;
+    margin-top: 25px;
     padding: 12px;
-    border-radius: 8px;
+    font-size: 1.15rem;
+    border-radius: 10px;
+    border: none;
+    background: #0077cc;
+    color: white;
     cursor: pointer;
-    transition: background 0.3s ease;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
   }
   button:hover {
     background: #005fa3;
   }
   #history {
     margin-top: 25px;
-    max-height: 150px;
+    max-height: 130px;
     overflow-y: auto;
-    border-top: 1px solid #ccc;
+    border-top: 1px solid #eee;
     padding-top: 15px;
   }
   #history li {
     cursor: pointer;
-    padding: 5px 8px;
-    border-radius: 5px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
   }
   #history li:hover {
     background: #d0e7ff;
@@ -64,62 +94,86 @@
   .error {
     border-color: #cc0000 !important;
   }
+  canvas {
+    margin-top: 15px;
+    border-radius: 10px;
+    background: #f0f5ff;
+    border: 1px solid #d0d7e5;
+  }
+  small {
+    color: #666;
+    margin-top: 8px;
+    font-size: 0.85rem;
+  }
 </style>
 </head>
 <body>
-<h1>Конвертер валют</h1>
 
-<label for="amountFrom">Сумма (из):</label>
-<input type="number" id="amountFrom" min="0" step="any" />
+<div id="converter">
+  <h1>Конвертер валют</h1>
 
-<label for="currencyFrom">Валюта (из):</label>
-<select id="currencyFrom">
-  <option value="usd">USD</option>
-  <option value="kzt">KZT</option>
-  <option value="key">KEY</option>
-  <option value="ref">REF</option>
-</select>
+  <label for="amountFrom">Сумма (из):</label>
+  <input type="number" id="amountFrom" min="0" step="any" placeholder="Введите сумму" />
 
-<label for="amountTo">Сумма (в):</label>
-<input type="number" id="amountTo" min="0" step="any" />
+  <label for="currencyFrom">Валюта (из):</label>
+  <select id="currencyFrom">
+    <option value="usd">USD</option>
+    <option value="kzt">KZT</option>
+    <option value="key">KEY</option>
+    <option value="ref">REF</option>
+  </select>
 
-<label for="currencyTo">Валюта (в):</label>
-<select id="currencyTo">
-  <option value="usd">USD</option>
-  <option value="kzt">KZT</option>
-  <option value="key">KEY</option>
-  <option value="ref">REF</option>
-</select>
+  <label for="amountTo">Сумма (в):</label>
+  <input type="number" id="amountTo" min="0" step="any" placeholder="Результат" />
 
-<button id="swapBtn">Поменять местами валюты и суммы</button>
+  <label for="currencyTo">Валюта (в):</label>
+  <select id="currencyTo">
+    <option value="usd">USD</option>
+    <option value="kzt">KZT</option>
+    <option value="key">KEY</option>
+    <option value="ref">REF</option>
+  </select>
 
-<ul id="history"></ul>
+  <button id="swapBtn">Поменять местами</button>
+
+  <ul id="history" title="История конвертаций"></ul>
+</div>
+
+<div id="chartContainer">
+  <h2>График курса KEY → REF</h2>
+  <canvas id="keyRefChart" width="300" height="180"></canvas>
+  <small>Обновляется каждые 5 минут</small>
+</div>
 
 <script>
+(() => {
+  // API ключ backpack.tf (public)
   const backpackApiKey = '68a1d6d01326fe092a02c00c';
 
+  // Элементы
   const amountFrom = document.getElementById('amountFrom');
   const currencyFrom = document.getElementById('currencyFrom');
   const amountTo = document.getElementById('amountTo');
   const currencyTo = document.getElementById('currencyTo');
   const swapBtn = document.getElementById('swapBtn');
   const historyList = document.getElementById('history');
+  const chartCanvas = document.getElementById('keyRefChart');
+  const ctx = chartCanvas.getContext('2d');
 
-  let rates = {
-    usd: 1,
-    kzt: 1,
-  };
+  // Константы и переменные
+  let rates = { usd: 1, kzt: 1 }; // курсы KZT и USD (floatrates)
+  const refToUsd = 0.20; // 1 REF = 0.20 USD, фиксировано
+  let keyPriceMetal = 52.22; // в рефах, обновляется backpack.tf
+  let refPriceMetal = 1;     // 1 реф
 
-  // Фиксируем курс Refined Metal к USD (пример)
-  let refToUsd = 0.20;
+  // Для графика
+  const maxPoints = 12; // последние 1 час с интервалом 5 минут
+  let chartData = JSON.parse(localStorage.getItem('chartData')) || [];
 
-  // Цены в металле (Refined Metal) — обновим с backpack.tf API
-  let keyPriceMetal = 52.22; // стартовое значение
-  let refPriceMetal = 1;     // всегда 1 Refined Metal
+  // История конвертаций
+  let history = JSON.parse(localStorage.getItem('history')) || [];
 
-  let isUpdating = false;
-  let history = JSON.parse(localStorage.getItem('history') || '[]');
-
+  // --- Загрузка курсов KZT с floatrates ---
   async function loadFloatRates() {
     try {
       const res = await fetch('https://www.floatrates.com/daily/usd.json');
@@ -128,16 +182,14 @@
         rates.kzt = data.kzt.rate;
       }
       rates.usd = 1;
+      // console.log('Floatrates загружены', rates);
     } catch(e) {
-      console.error('Ошибка загрузки курсов floatrates', e);
+      console.error('Ошибка загрузки floatrates', e);
     }
   }
 
+  // --- Загрузка цен key/ref с backpack.tf ---
   async function loadBackpackTfPrices() {
-    if (!backpackApiKey) {
-      console.log('backpack.tf API ключ не указан, используются статичные значения');
-      return;
-    }
     try {
       const url = `https://backpack.tf/api/IGetMarketPrices/v1?key=${backpackApiKey}`;
       const res = await fetch(url);
@@ -161,150 +213,223 @@
       keyPriceMetal = keyItem.value.value; // в Refined Metal
       refPriceMetal = refItem.value.value; // обычно 1
 
-      console.log(`Цены с backpack.tf: KEY=${keyPriceMetal} ref, REF=${refPriceMetal} ref`);
+      // Добавляем точку в график
+      addChartPoint(keyPriceMetal / refPriceMetal);
+      // console.log(`Backpack.tf: KEY=${keyPriceMetal} ref, REF=${refPriceMetal} ref`);
+
     } catch(e) {
       console.error('Ошибка при запросе backpack.tf API', e);
     }
   }
 
+  // Добавление точки в график и сохранение
+  function addChartPoint(value) {
+    const now = Date.now();
+    chartData.push({ time: now, value });
+    if (chartData.length > maxPoints) {
+      chartData.shift();
+    }
+    localStorage.setItem('chartData', JSON.stringify(chartData));
+    drawChart();
+  }
+
+  // Рисуем график KEY → REF
+  function drawChart() {
+    ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+    if (chartData.length === 0) {
+      ctx.fillStyle = '#666';
+      ctx.font = '14px Arial';
+      ctx.fillText('Нет данных для графика', 50, 90);
+      return;
+    }
+
+    const padding = 40;
+    const w = chartCanvas.width - padding * 2;
+    const h = chartCanvas.height - padding * 2;
+
+    // Найдем мин/макс
+    let values = chartData.map(p => p.value);
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+
+    // Ось Y
+    ctx.strokeStyle = '#ccc';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, padding + h);
+    ctx.lineTo(padding + w, padding + h);
+    ctx.stroke();
+
+    // Горизонтальные линии и подписи
+    ctx.fillStyle = '#888';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'right';
+
+    for(let i = 0; i <= 4; i++) {
+      let y = padding + h - (h / 4) * i;
+      let val = minVal + (maxVal - minVal) * i / 4;
+      ctx.beginPath();
+      ctx.moveTo(padding - 5, y);
+      ctx.lineTo(padding + w, y);
+      ctx.strokeStyle = '#eee';
+      ctx.stroke();
+      ctx.fillText(val.toFixed(3), padding - 10, y + 4);
+    }
+
+    // Ось X (время)
+    ctx.textAlign = 'center';
+    const timeRange = chartData[chartData.length - 1].time - chartData[0].time || 1;
+    for(let i = 0; i < chartData.length; i++) {
+      const x = padding + (w / (chartData.length - 1)) * i;
+      const date = new Date(chartData[i].time);
+      const label = date.getHours() + ':' + ('0' + date.getMinutes()).slice(-2);
+      ctx.fillText(label, x, padding + h + 15);
+    }
+
+    // Линия графика
+    ctx.strokeStyle = '#0077cc';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    chartData.forEach((point, i) => {
+      const x = padding + (w / (chartData.length - 1)) * i;
+      const y = padding + h - ((point.value - minVal) / (maxVal - minVal)) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Точки на линии
+    ctx.fillStyle = '#005fa3';
+    chartData.forEach((point, i) => {
+      const x = padding + (w / (chartData.length - 1)) * i;
+      const y = padding + h - ((point.value - minVal) / (maxVal - minVal)) * h;
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  // Конвертация
   function convertCurrency(amount, from, to) {
     if (isNaN(amount) || amount <= 0) return 0;
 
     let amountInUsd;
 
     switch(from) {
-      case 'usd':
-        amountInUsd = amount;
-        break;
-      case 'kzt':
-        amountInUsd = amount / rates.kzt;
-        break;
-      case 'key':
-        amountInUsd = amount * keyPriceMetal * refToUsd;
-        break;
-      case 'ref':
-        amountInUsd = amount * refToUsd;
-        break;
-      default:
-        amountInUsd = amount;
+      case 'usd': amountInUsd = amount; break;
+      case 'kzt': amountInUsd = amount / rates.kzt; break;
+      case 'key': amountInUsd = amount * keyPriceMetal * refToUsd; break;
+      case 'ref': amountInUsd = amount * refToUsd; break;
+      default: amountInUsd = amount;
     }
 
     let result;
 
     switch(to) {
-      case 'usd':
-        result = amountInUsd;
-        break;
-      case 'kzt':
-        result = amountInUsd * rates.kzt;
-        break;
-      case 'key':
-        result = amountInUsd / (keyPriceMetal * refToUsd);
-        break;
-      case 'ref':
-        result = amountInUsd / refToUsd;
-        break;
-      default:
-        result = amountInUsd;
+      case 'usd': result = amountInUsd; break;
+      case 'kzt': result = amountInUsd * rates.kzt; break;
+      case 'key': result = amountInUsd / (keyPriceMetal * refToUsd); break;
+      case 'ref': result = amountInUsd / refToUsd; break;
+      default: result = amountInUsd;
     }
 
     return result;
   }
 
-  function saveHistory(fromAmount, from, toAmount, to) {
-    const record = `${fromAmount.toFixed(4)} ${from.toUpperCase()} → ${toAmount.toFixed(4)} ${to.toUpperCase()}`;
-    history.unshift(record);
-    if (history.length > 10) history.pop();
+  // Конвертация по вводу
+  function convert(direction = 'forward') {
+    if(direction === 'forward') {
+      const fromVal = parseFloat(amountFrom.value);
+      if (isNaN(fromVal) || fromVal <= 0) {
+        amountTo.value = '';
+        return;
+      }
+      const toVal = convertCurrency(fromVal, currencyFrom.value, currencyTo.value);
+      amountTo.value = toVal.toFixed(4);
+
+      saveHistory(fromVal, currencyFrom.value, toVal, currencyTo.value);
+    } else {
+      const toVal = parseFloat(amountTo.value);
+      if (isNaN(toVal) || toVal <= 0) {
+        amountFrom.value = '';
+        return;
+      }
+      const fromVal = convertCurrency(toVal, currencyTo.value, currencyFrom.value);
+      amountFrom.value = fromVal.toFixed(4);
+
+      saveHistory(fromVal, currencyFrom.value, toVal, currencyTo.value);
+    }
+  }
+
+  // Сохраняем в историю
+  function saveHistory(fromAmount, fromCur, toAmount, toCur) {
+    const entry = {
+      fromAmount: fromAmount.toFixed(4),
+      fromCur,
+      toAmount: toAmount.toFixed(4),
+      toCur,
+      time: new Date().toISOString()
+    };
+    history.unshift(entry);
+    if(history.length > 20) history.pop();
     localStorage.setItem('history', JSON.stringify(history));
     renderHistory();
   }
 
+  // Отрисовка истории
   function renderHistory() {
     historyList.innerHTML = '';
-    history.forEach(item => {
+    history.forEach((item, idx) => {
       const li = document.createElement('li');
-      li.textContent = item;
-      li.addEventListener('click', () => {
-        // При клике вставляем запись в поля
-        const parts = item.split(' ');
-        if(parts.length >= 4) {
-          amountFrom.value = parseFloat(parts[0]);
-          currencyFrom.value = parts[1].toLowerCase();
-          amountTo.value = parseFloat(parts[3]);
-          currencyTo.value = parts[4].toLowerCase();
-        }
-      });
+      li.textContent = `${item.fromAmount} ${item.fromCur.toUpperCase()} → ${item.toAmount} ${item.toCur.toUpperCase()} (${new Date(item.time).toLocaleTimeString()})`;
+      li.title = 'Клик для использования';
+      li.onclick = () => {
+        amountFrom.value = item.fromAmount;
+        currencyFrom.value = item.fromCur;
+        amountTo.value = item.toAmount;
+        currencyTo.value = item.toCur;
+      };
       historyList.appendChild(li);
     });
   }
 
-  function convert(direction) {
-    const from = currencyFrom.value;
-    const to = currencyTo.value;
+  // Переключение валют местами
+  swapBtn.onclick = () => {
+    const tempCur = currencyFrom.value;
+    currencyFrom.value = currencyTo.value;
+    currencyTo.value = tempCur;
 
-    let fromAmountVal = parseFloat(amountFrom.value);
-    let toAmountVal = parseFloat(amountTo.value);
+    const tempAmt = amountFrom.value;
+    amountFrom.value = amountTo.value;
+    amountTo.value = tempAmt;
+  };
 
-    if (direction === 'forward') {
-      if (isNaN(fromAmountVal) || fromAmountVal <= 0) {
-        amountFrom.classList.add('error');
-        return;
-      } else {
-        amountFrom.classList.remove('error');
-      }
-      const converted = convertCurrency(fromAmountVal, from, to);
-      amountTo.value = converted.toFixed(4);
-      saveHistory(fromAmountVal, from, converted, to);
-    } else if (direction === 'backward') {
-      if (isNaN(toAmountVal) || toAmountVal <= 0) {
-        amountTo.classList.add('error');
-        return;
-      } else {
-        amountTo.classList.remove('error');
-      }
-      const converted = convertCurrency(toAmountVal, to, from);
-      amountFrom.value = converted.toFixed(4);
-      saveHistory(converted, from, toAmountVal, to);
-    }
-  }
-
+  // Обработчики
   amountFrom.addEventListener('input', () => convert('forward'));
   currencyFrom.addEventListener('change', () => convert('forward'));
   amountTo.addEventListener('input', () => convert('backward'));
   currencyTo.addEventListener('change', () => convert('forward'));
 
-  swapBtn.addEventListener('click', () => {
-    // Поменять валюты
-    const tempCurrency = currencyFrom.value;
-    currencyFrom.value = currencyTo.value;
-    currencyTo.value = tempCurrency;
-
-    // Поменять суммы
-    const tempAmount = amountFrom.value;
-    amountFrom.value = amountTo.value;
-    amountTo.value = tempAmount;
-
-    convert('forward');
-  });
-
-  async function updateAllRates() {
-    if (isUpdating) return;
-    isUpdating = true;
+  // Обновление курсов и графика каждые 5 минут
+  async function updateAll() {
     await loadFloatRates();
     await loadBackpackTfPrices();
     convert('forward');
-    isUpdating = false;
   }
 
-  function init() {
+  // Инициализация
+  (async () => {
     renderHistory();
-    updateAllRates();
-    // Обновлять курсы каждые 10 минут
-    setInterval(updateAllRates, 10 * 60 * 1000);
-  }
-
-  init();
-
+    await updateAll();
+    drawChart();
+    setInterval(async () => {
+      await loadBackpackTfPrices();
+      convert('forward');
+    }, 5 * 60 * 1000); // 5 минут
+  })();
+})();
 </script>
+
 </body>
 </html>
