@@ -1,23 +1,182 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Конвертер валют</title>
   <style>
-    /* Стили прежние, как договаривались */
-    /* ... */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 40px 20px;
+      background: #f7f9fc; font-family: 'Inter', sans-serif;
+      color: #222; min-height: 100vh;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .container {
+      background: #fff; padding: 30px 40px 40px;
+      border-radius: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      max-width: 400px; width: 100%;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    h1 { font-weight: 600; font-size: 2.2rem; margin-bottom: 30px; }
+    label {
+      align-self: flex-start; margin-bottom: 6px;
+      font-weight: 600; color: #444;
+    }
+    input, select {
+      width: 100%; padding: 14px 16px; margin-bottom: 18px;
+      border: 1.8px solid #cbd5e1; border-radius: 10px;
+      font-size: 1rem; font-weight: 400; background: #fefefe;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    input::placeholder { color: #94a3b8; }
+    input:focus, select:focus {
+      outline: none; border-color: #3b82f6;
+      box-shadow: 0 0 8px #3b82f6aa; background: #fff;
+    }
+    input.error, select.error {
+      border-color: #ef4444; box-shadow: 0 0 8px #ef4444aa;
+      background: #ffe6e6;
+    }
+    .error-message {
+      color: #ef4444; font-size: 0.85rem;
+      margin-top: -14px; margin-bottom: 18px;
+      align-self: flex-start; height: 18px;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .error-message.visible { opacity: 1; }
+    button {
+      width: 100%; padding: 15px 0; border: none;
+      border-radius: 12px; background-color: #3b82f6;
+      color: #fff; font-weight: 600; font-size: 1.15rem;
+      cursor: pointer; transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    button:hover { background-color: #2563eb; transform: scale(1.05); }
+    button:active { transform: scale(0.98); }
+    #result {
+      margin-top: 25px; font-size: 1.4rem; font-weight: 600;
+      color: #2563eb; min-height: 1.8em; text-align: center;
+      user-select: none;
+    }
+    #history { margin-top: 28px; width: 100%; }
+    #history h3 {
+      margin-bottom: 12px; font-weight: 600;
+      font-size: 1rem; color: #475569;
+      display: flex; justify-content: space-between;
+      align-items: center;
+    }
+    #history h3 button {
+      background: #ef4444; color: white;
+      font-size: 0.75rem; padding: 4px 10px;
+      border-radius: 8px; cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #history h3 button:hover { background: #b91c1c; }
+    #history ul {
+      max-height: 130px; overflow-y: auto;
+      padding-left: 18px; margin: 0;
+      font-size: 0.95rem; color: #64748b;
+    }
+    #history li {
+      margin-bottom: 7px; cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    #history li:hover {
+      color: #3b82f6; text-decoration: underline;
+    }
+    #status {
+      margin-top: 12px; font-size: 0.9rem;
+      font-weight: 600; text-align: center;
+      transition: color 0.4s ease;
+      user-select: none;
+    }
+    #status.loading { color: #2563eb; }
+    #status.success { color: #22c55e; }
+    #status.error { color: #ef4444; }
+    /* Manual Rate Panel */
+    #manualRatePanel {
+      position: fixed; bottom: 16px; right: 16px;
+      width: 280px; background: #f1f5f9;
+      border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      overflow: hidden; transition: height 0.3s ease; height: 40px;
+      z-index: 1000;
+    }
+    #manualRateHeader {
+      padding: 10px 18px; font-weight: 600; font-size: 1rem;
+      color: #334155; display: flex;
+      justify-content: space-between; align-items: center;
+      cursor: pointer;
+    }
+    #toggleManualRate {
+      background: #3b82f6; border: none; color: white;
+      border-radius: 6px; width: 30px; height: 30px;
+      cursor: pointer; transition: transform 0.3s ease;
+      font-weight: 700; user-select: none;
+    }
+    #manualRateContent {
+      padding: 10px 18px; border-top: 1px solid #cbd5e1;
+      background: white; display: none;
+    }
+    #manualRefToKeyInput {
+      width: 100%; padding: 10px 12px;
+      font-size: 1rem; border-radius: 10px;
+      border: 1.8px solid #cbd5e1;
+      transition: border-color 0.3s ease;
+    }
+    #manualRefToKeyInput:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 8px #3b82f6aa; outline: none;
+    }
   </style>
 </head>
 <body>
+
   <div class="container">
-    <!-- Поля ввода, история, кнопки — остаются без изменений -->
-    <!-- ... -->
+    <h1>Конвертер валют</h1>
+
+    <label for="amount">Сумма</label>
+    <input type="number" id="amount" placeholder="Введите сумму" step="any" min="0"/>
+
+    <label for="from">Из валюты</label>
+    <select id="from">
+      <option value="USD">USD</option>
+      <option value="KZT">KZT</option>
+      <option value="KEY">KEY</option>
+      <option value="REF">REF</option>
+    </select>
+
+    <label for="to">В валюту</label>
+    <select id="to">
+      <option value="USD">USD</option>
+      <option value="KZT">KZT</option>
+      <option value="KEY">KEY</option>
+      <option value="REF">REF</option>
+    </select>
+
+    <button id="swapBtn" title="Поменять валюты местами">Поменять местами</button>
+
+    <div id="status"></div>
+    <div id="result">–</div>
+
+    <div id="history">
+      <h3>
+        История конвертаций:
+        <button id="clearHistoryBtn">Очистить</button>
+      </h3>
+      <ul id="historyList"></ul>
+    </div>
   </div>
 
-  <!-- Ручной ввод REF→KEY -->
+  <!-- Ручной ввод REF → KEY -->
   <div id="manualRatePanel">
-    <!-- ... -->
+    <div id="manualRateHeader">
+      REF → KEY (ручной ввод)
+      <button id="toggleManualRate">▼</button>
+    </div>
+    <div id="manualRateContent">
+      <input type="number" id="manualRefToKeyInput" placeholder="Введите курс REF → KEY" step="any" min="0"/>
+    </div>
   </div>
 
   <script>
@@ -45,16 +204,66 @@
     let history = [];
     let usdToKzt = null;
 
-    // Загрузка ручного курса
-    const savedManual = localStorage.getItem(manualRateKey);
-    if (savedManual && !isNaN(parseFloat(savedManual))) {
-      keyToRef = parseFloat(savedManual);
-      manualInput.value = keyToRef;
+    // Загрузка настроек и истории
+    function loadSettings() {
+      const s = localStorage.getItem(settingsKey);
+      if(s){
+        try {
+          const obj = JSON.parse(s);
+          obj.amount && (amountInput.value = obj.amount);
+          obj.from && (fromSelect.value = obj.from);
+          obj.to && (toSelect.value = obj.to);
+        } catch {}
+      }
+    }
+    function saveSettings() {
+      const obj = { amount: amountInput.value, from: fromSelect.value, to: toSelect.value };
+      localStorage.setItem(settingsKey, JSON.stringify(obj));
     }
 
-    function saveManualRate() {
+    function loadHistory() {
+      const h = localStorage.getItem(historyKey);
+      if(h){
+        try { history = JSON.parse(h); } catch {}
+      }
+    }
+    function saveHistory() {
+      localStorage.setItem(historyKey, JSON.stringify(history));
+    }
+    function renderHistory() {
+      historyList.innerHTML = '';
+      if(history.length === 0){
+        historyList.innerHTML = '<li style="color:#999;">История пуста</li>';
+        return;
+      }
+      history.forEach(entry => {
+        const li = document.createElement('li');
+        li.textContent = entry;
+        li.addEventListener('click', () => {
+          const parts = entry.match(/^([\d.]+) (\w+) → (\w+)/);
+          if(parts){
+            amountInput.value = parts[1];
+            fromSelect.value = parts[2];
+            toSelect.value = parts[3];
+            calculateAndShow();
+          }
+        });
+        historyList.appendChild(li);
+      });
+    }
+
+    function loadManualRate(){
+      const val = localStorage.getItem(manualRateKey);
+      if(val && !isNaN(parseFloat(val))){
+        keyToRef = parseFloat(val);
+        manualInput.value = keyToRef;
+      } else {
+        manualInput.value = keyToRef;
+      }
+    }
+    function saveManualRate(){
       const v = parseFloat(manualInput.value);
-      if (!isNaN(v) && v > 0) {
+      if(!isNaN(v) && v>0){
         keyToRef = v;
         localStorage.setItem(manualRateKey, v.toString());
       }
@@ -65,140 +274,102 @@
       statusDiv.className = 'loading';
       try {
         const res = await fetch('https://www.floatrates.com/daily/usd.json');
-        if (!res.ok) throw new Error('Сеть недоступна');
+        if(!res.ok) throw new Error('Сеть недоступна');
         const data = await res.json();
-
-        console.log('Ключи API:', Object.keys(data));
-        if (!data['kzt'] || !data['kzt'].rate) {
-          throw new Error('Курс KZT не найден');
-        }
-
+        console.log('floatrates keys:', Object.keys(data));
+        if(!data['kzt'] || !data['kzt'].rate) throw new Error('KZT rate missing');
         usdToKzt = data['kzt'].rate;
         statusDiv.textContent = 'Курс USD → KZT загружен';
         statusDiv.className = 'success';
-      } catch (e) {
+      } catch(e) {
         usdToKzt = null;
         statusDiv.textContent = 'Ошибка загрузки курса USD → KZT';
         statusDiv.className = 'error';
-        console.error('Ошибка:', e);
+        console.error(e);
       }
     }
 
-    function validate() {
-      // простая валидация...
-      return true;
+    function validate(){
+      let ok = true;
+      if(!amountInput.value || isNaN(amountInput.value) || parseFloat(amountInput.value)<=0){
+        amountInput.classList.add('error');
+        ok = false;
+      } else amountInput.classList.remove('error');
+      if(fromSelect.value===toSelect.value){
+        statusDiv.textContent = 'Валюты не должны совпадать';
+        statusDiv.className = 'error';
+        ok = false;
+      }
+      return ok;
     }
 
-    function convert(amount, from, to) {
-      if (from === to) return amount;
+    function convert(amount, from, to){
       let inKey;
-      switch (from) {
-        case 'KEY': inKey = amount; break;
-        case 'USD': inKey = amount / keyToUsd; break;
-        case 'REF': inKey = amount / keyToRef; break;
+      switch(from){
+        case 'KEY': inKey=amount;break;
+        case 'USD': inKey=amount/keyToUsd;break;
+        case 'REF': inKey=amount/keyToRef;break;
         case 'KZT':
-          if (!usdToKzt) throw new Error('Курс KZT недоступен');
-          inKey = amount / (keyToUsd * usdToKzt);
-          break;
+          if(!usdToKzt) throw new Error('KZT курс недоступен');
+          inKey = amount/(keyToUsd*usdToKzt);break;
         default: throw new Error('Неизвестная валюта');
       }
-      switch (to) {
+      switch(to){
         case 'KEY': return inKey;
-        case 'USD': return inKey * keyToUsd;
-        case 'REF': return inKey * keyToRef;
+        case 'USD': return inKey*keyToUsd;
+        case 'REF': return inKey*keyToRef;
         case 'KZT':
-          if (!usdToKzt) throw new Error('Курс KZT недоступен');
-          return inKey * keyToUsd * usdToKzt;
+          if(!usdToKzt) throw new Error('KZT курс недоступен');
+          return inKey*keyToUsd*usdToKzt;
         default: throw new Error('Неизвестная валюта');
       }
     }
 
-    function calculateAndShow() {
-      if (!validate()) { resultDiv.textContent = '–'; return; }
-      const amount = parseFloat(amountInput.value);
-      const from = fromSelect.value;
-      const to = toSelect.value;
+    function calculateAndShow(){
+      if(!validate()){ resultDiv.textContent = '–'; return; }
+      const amt = parseFloat(amountInput.value),
+            from = fromSelect.value,
+            to = toSelect.value;
       try {
-        const out = convert(amount, from, to);
-        resultDiv.textContent = `${(Math.round(out * 100) / 100)} ${to}`;
+        const out = convert(amt, from, to),
+              rounded = Math.round(out*100)/100;
+        resultDiv.textContent = `${rounded} ${to}`;
 
         const now = new Date();
-        const t = now.toTimeString().split(' ')[0];
-        const entry = `${amount} ${from} → ${to} = ${(Math.round(out * 100) / 100)} (${t})`;
-
-        history.unshift(entry);
-        if (history.length > 15) history.pop();
-        localStorage.setItem(historyKey, JSON.stringify(history));
-        renderHistory();
-      } catch(e) {
+        const time = now.toTimeString().slice(0,8);
+        const entry = `${amt} ${from} → ${to} = ${rounded} (${time})`;
+        if(history[0] !== entry){ history.unshift(entry); if(history.length>15) history.pop(); saveHistory(); renderHistory();}
+        statusDiv.textContent=''; statusDiv.className='';
+      } catch(e){
         resultDiv.textContent = 'Ошибка';
-        statusDiv.textContent = e.message;
-        statusDiv.className = 'error';
+        statusDiv.textContent = e.message; statusDiv.className = 'error';
       }
-    }
-
-    function renderHistory() {
-      historyList.innerHTML = '';
-      if (!history.length) {
-        historyList.innerHTML = '<li style="color:#999;">История пуста</li>';
-        return;
-      }
-      history.forEach(h => {
-        const li = document.createElement('li');
-        li.textContent = h;
-        historyList.appendChild(li);
-      });
     }
 
     swapBtn.addEventListener('click', () => {
-      const a = fromSelect.value;
-      fromSelect.value = toSelect.value;
-      toSelect.value = a;
-      calculateAndShow();
+      const a = fromSelect.value; fromSelect.value = toSelect.value; toSelect.value = a;
+      saveSettings(); calculateAndShow();
     });
 
-    [amountInput, fromSelect, toSelect].forEach(el =>
-      el.addEventListener('input', calculateAndShow)
-    );
-
-    manualInput.addEventListener('input', () => {
-      saveManualRate();
-      calculateAndShow();
-    });
-
+    [amountInput, fromSelect, toSelect].forEach(el => el.addEventListener('input', () => { saveSettings(); calculateAndShow(); }));
+    manualInput.addEventListener('input', () => { saveManualRate(); calculateAndShow(); });
     toggleBtn.addEventListener('click', () => {
-      if (manualRateContent.style.display === 'block') {
-        manualRateContent.style.display = 'none';
-        manualRatePanel.style.height = '40px';
-        toggleBtn.textContent = '▼';
+      if(manualRateContent.style.display==='block'){
+        manualRateContent.style.display='none'; manualRatePanel.style.height='40px'; toggleBtn.textContent='▼';
       } else {
-        manualRateContent.style.display = 'block';
-        manualRatePanel.style.height = '110px';
-        toggleBtn.textContent = '▲';
+        manualRateContent.style.display='block'; manualRatePanel.style.height='110px'; toggleBtn.textContent='▲';
       }
     });
 
-    (function init() {
-      const hs = localStorage.getItem(historyKey);
-      if (hs) history = JSON.parse(hs) || [];
+    (function init(){
+      loadManualRate();
       loadSettings();
+      loadHistory();
       renderHistory();
       calculateAndShow();
       fetchUsdToKzt();
-      setInterval(fetchUsdToKzt, 900000); // обновление каждые 15 мин
+      setInterval(fetchUsdToKzt, 900000);
     })();
-
-    function loadSettings() {
-      const s = localStorage.getItem(settingsKey);
-      if (s) {
-        try {
-          const ss = JSON.parse(s);
-          if (ss.amount) amountInput.value = ss.amount;
-          if (ss.from) fromSelect.value = ss.from;
-          if (ss.to) toSelect.value = ss.to;
-        } catch {}
-      }
-    }
   </script>
 </body>
 </html>
