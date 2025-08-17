@@ -1,120 +1,114 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Конвертер валют USD, KZT, KEY</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 400px;
-      margin: 2em auto;
-      padding: 1em;
-    }
-    label, select, input, button {
-      display: block;
-      width: 100%;
-      margin: 0.5em 0;
-      padding: 0.5em;
-      font-size: 1em;
-    }
-    button {
-      cursor: pointer;
-    }
-    h1, h2 {
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Конвертер валют на Floatrates</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 400px; margin: 2em auto; padding: 1em; }
+  label, select, input, button { display: block; width: 100%; margin: 0.5em 0; padding: 0.5em; }
+  button { cursor: pointer; }
+  h1, h2 { text-align: center; }
+</style>
 </head>
 <body>
 
-  <h1>Конвертер валют</h1>
+<h1>Конвертер валют (USD, KZT, KEY)</h1>
 
-  <label for="amount">Сумма</label>
-  <input type="number" id="amount" placeholder="Введите сумму" />
+<label for="amount">Сумма</label>
+<input type="number" id="amount" placeholder="Введите сумму" />
 
-  <label for="from">Из валюты</label>
-  <select id="from">
-    <option value="USD">USD</option>
-    <option value="KZT">KZT</option>
-    <option value="KEY">KEY</option>
-  </select>
+<label for="from">Из валюты</label>
+<select id="from">
+  <option value="USD">USD</option>
+  <option value="KZT">KZT</option>
+  <option value="KEY">KEY</option>
+</select>
 
-  <label for="to">В валюту</label>
-  <select id="to">
-    <option value="USD">USD</option>
-    <option value="KZT">KZT</option>
-    <option value="KEY">KEY</option>
-  </select>
+<label for="to">В валюту</label>
+<select id="to">
+  <option value="USD">USD</option>
+  <option value="KZT">KZT</option>
+  <option value="KEY">KEY</option>
+</select>
 
-  <button id="convertBtn">Конвертировать</button>
+<button id="convertBtn">Конвертировать</button>
 
-  <h2 id="result">Результат: —</h2>
+<h2 id="result">Результат: —</h2>
 
-  <script>
-    const keyToUsd = 2.4; // 1 KEY = 2.4 USD
-    let usdToKzt = null;
+<script>
+  const keyToUsd = 2.4; // 1 KEY = 2.4 USD
+  let usdRates = null; // Курс USD → остальные
 
-    async function fetchUsdToKzt() {
-      try {
-        const resp = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=KZT');
-        const data = await resp.json();
-        if(data && data.rates && data.rates.KZT) {
-          usdToKzt = data.rates.KZT;
-          console.log('Курс USD → KZT:', usdToKzt);
-        } else {
-          throw new Error('Ошибка в данных API');
-        }
-      } catch (e) {
-        document.getElementById('result').textContent = 'Ошибка при загрузке курса USD → KZT';
-        console.error(e);
-      }
+  async function loadUsdRates() {
+    try {
+      const res = await fetch('https://www.floatrates.com/daily/usd.json');
+      if(!res.ok) throw new Error('Ошибка сети');
+      usdRates = await res.json();
+      console.log('Курсы USD загружены:', usdRates);
+    } catch(e) {
+      document.getElementById('result').textContent = 'Ошибка загрузки курсов USD';
+      console.error(e);
+    }
+  }
+
+  function convert() {
+    if (!usdRates) {
+      document.getElementById('result').textContent = 'Курсы не загружены';
+      return;
     }
 
-    async function convert() {
-      if (usdToKzt === null) {
-        await fetchUsdToKzt();
-        if (usdToKzt === null) return;
-      }
+    const amount = parseFloat(document.getElementById('amount').value);
+    if (isNaN(amount)) {
+      document.getElementById('result').textContent = 'Введите корректную сумму';
+      return;
+    }
 
-      const amount = parseFloat(document.getElementById('amount').value);
-      if (isNaN(amount)) {
-        document.getElementById('result').textContent = 'Введите корректную сумму';
+    const from = document.getElementById('from').value;
+    const to = document.getElementById('to').value;
+
+    let amountInUsd;
+
+    // Приводим from к USD
+    if (from === 'USD') {
+      amountInUsd = amount;
+    } else if (from === 'KZT') {
+      if (!usdRates['kzt']) {
+        document.getElementById('result').textContent = 'Нет курса для KZT';
         return;
       }
-
-      const from = document.getElementById('from').value;
-      const to = document.getElementById('to').value;
-
-      let amountInUsd;
-
-      // Приводим из "from" к USD
-      if (from === 'USD') {
-        amountInUsd = amount;
-      } else if (from === 'KZT') {
-        amountInUsd = amount / usdToKzt;
-      } else if (from === 'KEY') {
-        amountInUsd = amount * keyToUsd;
-      }
-
-      let result;
-
-      // Конвертируем из USD в "to"
-      if (to === 'USD') {
-        result = amountInUsd;
-      } else if (to === 'KZT') {
-        result = amountInUsd * usdToKzt;
-      } else if (to === 'KEY') {
-        result = amountInUsd / keyToUsd;
-      }
-
-      document.getElementById('result').textContent = `Результат: ${result.toFixed(2)} ${to}`;
+      amountInUsd = amount / usdRates['kzt'].rate;
+    } else if (from === 'KEY') {
+      amountInUsd = amount * keyToUsd;
+    } else {
+      document.getElementById('result').textContent = 'Неизвестная валюта';
+      return;
     }
 
-    document.getElementById('convertBtn').addEventListener('click', convert);
+    let result;
 
-    // Загружаем курс USD → KZT при старте
-    fetchUsdToKzt();
-  </script>
+    // Конвертируем из USD в to
+    if (to === 'USD') {
+      result = amountInUsd;
+    } else if (to === 'KZT') {
+      if (!usdRates['kzt']) {
+        document.getElementById('result').textContent = 'Нет курса для KZT';
+        return;
+      }
+      result = amountInUsd * usdRates['kzt'].rate;
+    } else if (to === 'KEY') {
+      result = amountInUsd / keyToUsd;
+    } else {
+      document.getElementById('result').textContent = 'Неизвестная валюта';
+      return;
+    }
+
+    document.getElementById('result').textContent = `Результат: ${result.toFixed(2)} ${to}`;
+  }
+
+  document.getElementById('convertBtn').addEventListener('click', convert);
+
+  loadUsdRates();
+</script>
 
 </body>
 </html>
